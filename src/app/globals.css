@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafaf9;
+  --foreground: #1c1917;
 }
 
 @theme inline {
@@ -12,15 +12,82 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* react-day-picker: retint the accent color (selected day, today) to the
+   app's green. Doubled selector beats the library's own `.rdp-root` rule
+   on specificity, so this holds regardless of CSS import order. */
+.rdp-root.rdp-root {
+  --rdp-accent-color: #059669;
+  --rdp-accent-background-color: #ecfdf5;
+}
+
+.rdp-day_button {
+  position: relative;
+}
+
+/* dot indicator for days that have a session log; neutral dark so it stays
+   visible whether or not the day also has an attendance-status background */
+.has-log .rdp-day_button::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background-color: rgba(28, 25, 23, 0.6);
+}
+
+/* attendance status colors: present green, absent red, late amber, excused gray */
+.att-present .rdp-day_button {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.att-absent .rdp-day_button {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.att-late .rdp-day_button {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.att-excused .rdp-day_button {
+  background-color: #e7e5e4;
+  color: #57534e;
+}
+
+/* center event type colors: field trip blue, camp green, other gray */
+.evt-field-trip .rdp-day_button {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.evt-camp .rdp-day_button {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.evt-other .rdp-day_button {
+  background-color: #e7e5e4;
+  color: #57534e;
+}
+
+/* weekend / Korean public holiday: center is closed. class-calendar applies
+   this directly to the day button (custom DayButton); attendance-calendar
+   applies it via modifiersClassNames on the day cell -- covering both
+   selector shapes here. Declared last so it wins on source order if an
+   attendance status color ever applies to the same day. */
+.day-off .rdp-day_button,
+.rdp-day_button.day-off {
+  background-color: #f5f5f4;
+  color: #a8a29e;
 }

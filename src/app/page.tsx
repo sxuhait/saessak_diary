@@ -1,65 +1,113 @@
-import Image from "next/image";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { logout } from "./actions";
 
-export default function Home() {
+const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  weekday: "long",
+});
+
+function toISODate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getWeekRange(today: Date) {
+  const dayOfWeek = today.getDay(); // 0 = Sun .. 6 = Sat
+  const daysSinceMonday = (dayOfWeek + 6) % 7;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - daysSinceMonday);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { start: toISODate(monday), end: toISODate(sunday) };
+}
+
+export default async function HomePage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { count: menteeCount } = await supabase
+    .from("mentees")
+    .select("*", { count: "exact", head: true });
+
+  const today = new Date();
+  const { start, end } = getWeekRange(today);
+
+  const { data: weekEvents } = await supabase
+    .from("center_events")
+    .select("id, title")
+    .lte("start_date", end)
+    .gte("end_date", start)
+    .order("start_date");
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-stone-900">홈</h1>
+          <p className="mt-1 text-sm text-stone-500">{user?.email}</p>
+        </div>
+        <form action={logout}>
+          <button
+            type="submit"
+            className="text-sm text-stone-500 underline hover:text-emerald-700"
+          >
+            로그아웃
+          </button>
+        </form>
+      </header>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-stone-200 bg-white p-4">
+          <p className="text-xs text-stone-500">오늘</p>
+          <p className="mt-1 text-sm font-medium text-stone-900">
+            {dateFormatter.format(today)}
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+        <Link
+          href="/mentees"
+          className="rounded-xl border border-stone-200 bg-white p-4 hover:border-emerald-300 hover:bg-emerald-50"
+        >
+          <p className="text-xs text-stone-500">내가 담당한 멘티</p>
+          <p className="mt-1 text-2xl font-semibold text-emerald-700">
+            {menteeCount ?? 0}명
+          </p>
+        </Link>
+
+        <Link
+          href="/events"
+          className="rounded-xl border border-stone-200 bg-white p-4 hover:border-emerald-300 hover:bg-emerald-50"
+        >
+          <p className="text-xs text-stone-500">이번 주 센터 행사</p>
+          <p className="mt-1 text-2xl font-semibold text-emerald-700">
+            {weekEvents?.length ?? 0}건
+          </p>
+          {weekEvents && weekEvents.length > 0 && (
+            <ul className="mt-2 flex flex-col gap-0.5">
+              {weekEvents.slice(0, 2).map((event) => (
+                <li key={event.id} className="truncate text-xs text-stone-500">
+                  {event.title}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Link>
+      </div>
+
+      <Link
+        href="/classes"
+        className="text-sm text-emerald-700 hover:text-emerald-800"
+      >
+        센터 수업 관리 →
+      </Link>
     </div>
   );
 }

@@ -31,7 +31,12 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
+# .env* already covers .env.local and every .env*.local variant
 .env*
+!.env.example
+
+# local-only secrets
+supabase_pwd.txt
 
 # vercel
 .vercel
