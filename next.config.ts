@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  devIndicators: {
+    // Default bottom-left position overlaps the app's fixed bottom nav.
+    position: "top-right",
+  },
 };
 
 export default nextConfig;
