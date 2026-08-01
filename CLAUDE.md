@@ -75,6 +75,7 @@ Copy `.env.example` to `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL` / `NE
 | `/mentees/[menteeId]/attendance` | Separate monthly calendar for attendance only. Click a day → present/absent/late/excused buttons; late/excused reveal a reason textarea (stored in `attendance.reason`); re-clicking a day reloads its saved state |
 | `/events` | Center-wide event calendar (field trips, camps), shared by all mentors regardless of mentee assignment. Click a day to see/add events for that day |
 | `/events/[eventId]` | Event detail with inline view ↔ edit toggle and delete (confirm dialog, then redirect to `/events`) |
+| `/schedule` | Center weekly timetable (Mon–Fri × 09:00–20:00), hardcoded in `schedule/page.tsx` — no `center_schedule` table yet, so this is display-only until an edit UI is built |
 
 ### Calendar UI pattern (react-day-picker)
 
