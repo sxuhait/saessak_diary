@@ -6,6 +6,7 @@ import { LogCalendar } from "./log-calendar";
 import { SessionLogList } from "./session-log-list";
 import { ClassEnrollments } from "./class-enrollments";
 import { SubjectSummary } from "./subject-summary";
+import { LearningDiagnostics } from "./learning-diagnostics";
 
 export default async function MenteeSessionLogPage({
   params,
@@ -61,6 +62,11 @@ export default async function MenteeSessionLogPage({
     .order("day_of_week")
     .order("name");
 
+  const { data: attendance } = await supabase
+    .from("attendance")
+    .select("session_date, status")
+    .eq("mentee_id", menteeId);
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10">
       <div>
@@ -105,6 +111,8 @@ export default async function MenteeSessionLogPage({
       <LogCalendar logs={logs ?? []} />
 
       <SubjectSummary logs={logs ?? []} />
+
+      <LearningDiagnostics logs={logs ?? []} attendance={attendance ?? []} />
 
       <div className="flex w-full flex-col gap-3">
         <h2 className="text-sm font-medium text-stone-500">지난 일지</h2>
