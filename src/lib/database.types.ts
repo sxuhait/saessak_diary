@@ -307,6 +307,7 @@ export type Database = {
           id: string
           mentee_id: string
           mentor_id: string
+          progress: string | null
           session_date: string
           subject: string | null
           updated_at: string
@@ -318,6 +319,7 @@ export type Database = {
           id?: string
           mentee_id: string
           mentor_id: string
+          progress?: string | null
           session_date: string
           subject?: string | null
           updated_at?: string
@@ -329,6 +331,7 @@ export type Database = {
           id?: string
           mentee_id?: string
           mentor_id?: string
+          progress?: string | null
           session_date?: string
           subject?: string | null
           updated_at?: string

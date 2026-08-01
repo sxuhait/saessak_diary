@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { DatePicker } from "@/components/date-picker";
+import { COMMON_SUBJECTS } from "@/lib/subjects";
 import { deleteSessionLog, updateSessionLog } from "./actions";
 
 type SessionLog = {
   id: string;
   session_date: string;
   subject: string | null;
+  progress: string | null;
   content: string;
 };
 
@@ -71,7 +73,30 @@ function EditLogForm({
           id={`subject-${log.id}`}
           name="subject"
           type="text"
+          list={`subject-options-${log.id}`}
           defaultValue={log.subject ?? ""}
+          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+        />
+        <datalist id={`subject-options-${log.id}`}>
+          {COMMON_SUBJECTS.map((subject) => (
+            <option key={subject} value={subject} />
+          ))}
+        </datalist>
+      </div>
+
+      <div className="space-y-1">
+        <label
+          htmlFor={`progress-${log.id}`}
+          className="text-sm font-medium text-stone-700"
+        >
+          진도 (선택)
+        </label>
+        <input
+          id={`progress-${log.id}`}
+          name="progress"
+          type="text"
+          defaultValue={log.progress ?? ""}
+          placeholder="예: 문제집 45~52p, 3단원"
           className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
         />
       </div>
@@ -166,6 +191,11 @@ export function SessionLogList({ logs }: { logs: SessionLog[] }) {
                 </span>
               )}
             </div>
+            {log.progress && (
+              <p className="mt-2 text-xs text-stone-500">
+                진도: {log.progress}
+              </p>
+            )}
             <p className="mt-2 whitespace-pre-wrap text-sm text-stone-700">
               {log.content}
             </p>

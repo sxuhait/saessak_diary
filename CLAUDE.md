@@ -71,7 +71,7 @@ Copy `.env.example` to `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL` / `NE
 | `/login` | Email/password sign-in (Supabase Auth), only public route besides `/auth/*` |
 | `/` | Home dashboard: today's date, my mentee count, this-week center-event count, links into `/mentees` and `/events` |
 | `/mentees` | List of mentees assigned to the logged-in mentor (RLS does the filtering — no explicit join needed in the query) |
-| `/mentees/[menteeId]` | Session-log form + monthly calendar of that mentee's logs (dot per day with a log, click a day to see that day's logs) + full chronological log list |
+| `/mentees/[menteeId]` | Session-log form (date, subject, progress, content) + monthly calendar of that mentee's logs (dot per day with a log, click a day to see that day's logs) + subject-summary table (last studied date/days-ago/latest progress per subject, staleness warning at 14+ days — see `subject-summary.tsx`) + full chronological log list |
 | `/mentees/[menteeId]/attendance` | Separate monthly calendar for attendance only. Click a day → present/absent/late/excused buttons; late/excused reveal a reason textarea (stored in `attendance.reason`); re-clicking a day reloads its saved state |
 | `/events` | Center-wide event calendar (field trips, camps), shared by all mentors regardless of mentee assignment. Click a day to see/add events for that day |
 | `/events/[eventId]` | Event detail with inline view ↔ edit toggle and delete (confirm dialog, then redirect to `/events`) |
@@ -101,13 +101,18 @@ Single light theme, no dark mode (there's no `dark:` class anywhere in `src/` �
 
 ## Data model (`supabase/migrations/`)
 
-Six tables across four migrations:
+Nine tables across ten migrations:
 
 1. `20260728121422_init_schema.sql` — `mentors`, `mentees`, `weekday_registrations`, `attendance`, `session_logs`.
 2. `20260728125543_tighten_rls_mentor_scope.sql` — closes an RLS gap (see below).
 3. `20260728143715_add_attendance_reason.sql` — adds `attendance.reason`.
 4. `20260728145946_add_center_events.sql` — adds `center_events` + `center_event_type` enum.
 5. `20260729124812_add_center_event_schedule_and_photos.sql` — adds `center_events.schedule` and `center_events.photo_urls`.
+6. `20260730134002_add_classes.sql` — adds `classes` (shared, like `center_events`) + `class_enrollments` (mentee↔class, mentor-scoped like `session_logs`).
+7. `20260730142008_add_class_cancellations.sql` — adds `class_cancellations`, per-date exceptions to a class's weekly recurrence.
+8. `20260730144602_add_attendance_delete_policy.sql` — adds the missing `attendance` DELETE policy (mentor-scoped, same shape as its UPDATE policy).
+9. `20260730145338_add_class_color.sql` — adds `classes.color` (`class_color` enum) for per-class calendar dots.
+10. `20260801120000_add_session_log_progress.sql` — adds `session_logs.progress`.
 
 ### Tables
 
@@ -115,7 +120,8 @@ Six tables across four migrations:
 - **`mentees`** — the kids. `name`, `birth_date`, `school`, `grade`, `guardian_contact`, `notes`.
 - **`weekday_registrations`** — `(mentee_id, mentor_id, day_of_week)`, `day_of_week` is `0`(Sun)–`6`(Sat). This is how a mentee gets associated with a mentor — there is no `mentee.mentor_id` column. **This table is the source of truth for "which mentor owns which mentee"**; every scoped RLS policy below is expressed in terms of it. No UI writes to this table yet (see Roadmap) — seed it directly via the Supabase SQL editor.
 - **`attendance`** — one row per `(mentee_id, session_date)` (unique constraint), `status` is the `attendance_status` enum (`present` / `absent` / `late` / `excused`), optional `reason` text (used for `late` and `excused`), optional link back to the `weekday_registration` it fulfills.
-- **`session_logs`** — mentor's freeform write-up per `(mentee_id, session_date)`, optional `subject`, optional link to an `attendance` row. This is the table the future AI analysis will read across time per mentee.
+- **`session_logs`** — mentor's freeform write-up per `(mentee_id, session_date)`, optional `subject` (free text, quick-picked from `COMMON_SUBJECTS` in `src/lib/subjects.ts` via a datalist so it stays consistent enough to group by), optional `progress` (short freeform text like "문제집 45~52p", read by the subject-summary aggregation on the mentee page — see below), optional link to an `attendance` row. This is the table the future AI analysis will read across time per mentee.
+- **`classes`** — center-run classes (외부 강사 수업), shared like `center_events`: `name`, `day_of_week`, `teacher_name`, `description`, `color` (`class_color` enum, for calendar dots). `class_enrollments` is the mentee↔class join table, mentor-scoped like `session_logs`/`attendance`. `class_cancellations` holds per-date exceptions to a class's weekly recurrence.
 - **`center_events`** — `title`, `event_type` (enum: `field_trip` / `camp` / `other`), `start_date`/`end_date` (multi-day ranges, `end_date >= start_date` check), `location`, `description` (short blurb), `schedule` (longer freeform itinerary text), `photo_urls` (`text[]`, defaults `{}` — **column exists but there is no upload UI or Storage bucket wired up yet**), `created_by` (nullable, `on delete set null`, not used in RLS — just informational).
 
 ### RLS summary
@@ -123,7 +129,8 @@ Six tables across four migrations:
 - **`mentees`, `attendance`, `session_logs`** are mentor-scoped through `weekday_registrations`: a mentor can only SELECT a mentee (and that mentee's attendance/session_logs) if a `weekday_registrations` row links that mentee to `auth.uid()`. `attendance`/`session_logs` INSERT/UPDATE additionally require `mentor_id = auth.uid()` **and** that same assignment check — a mentor can't log or mark attendance for someone else's mentee even knowing the mentee's id. `session_logs` DELETE is `mentor_id = auth.uid()` only.
 - **`mentees` INSERT** is open to any authenticated mentor (creating a mentee record doesn't assign a mentor by itself — that happens separately via `weekday_registrations`). A mentor who creates a mentee but hasn't added a `weekday_registrations` row for themselves won't be able to see it again until they do. There's no mentee-creation UI yet — add rows via the Supabase dashboard when testing.
 - **`weekday_registrations`**: a mentor can only see/insert/update/delete their own assignment rows (`mentor_id = auth.uid()`), not other mentors' schedules.
-- **`center_events`** is deliberately **not** scoped like the tables above — full shared CRUD (`using (true)` / `with check (true)`) for any authenticated mentor on select/insert/update/delete, since it's a center-wide bulletin board, not per-mentor data. Don't copy the `weekday_registrations`-based scoping pattern onto this table.
+- **`center_events`**, **`classes`**, **`class_cancellations`** are deliberately **not** scoped like the tables above — full shared CRUD (`using (true)` / `with check (true)`) for any authenticated mentor on select/insert/update/delete, since they're center-wide, not per-mentor data. Don't copy the `weekday_registrations`-based scoping pattern onto these tables.
+- **`class_enrollments`** is mentor-scoped the same way as `session_logs`/`attendance`: a mentor can only see/insert/delete enrollment rows for mentees assigned to them via `weekday_registrations`.
 - Revisit the mentor-scoped model if the center grows to multiple independent branches, or if mentees can be reassigned away from a mentor who should keep historical read access to logs they wrote.
 
 ## Roadmap (not yet built)

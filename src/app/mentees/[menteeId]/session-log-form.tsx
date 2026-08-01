@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { DatePicker } from "@/components/date-picker";
+import { COMMON_SUBJECTS } from "@/lib/subjects";
 import { createSessionLog, type SessionLogState } from "./actions";
 
 const initialState: SessionLogState = {};
@@ -30,7 +31,26 @@ export function SessionLogForm({ menteeId }: { menteeId: string }) {
           id="subject"
           name="subject"
           type="text"
+          list="subject-options"
           placeholder="예: 수학, 독서"
+          className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+        />
+        <datalist id="subject-options">
+          {COMMON_SUBJECTS.map((subject) => (
+            <option key={subject} value={subject} />
+          ))}
+        </datalist>
+      </div>
+
+      <div className="space-y-1">
+        <label htmlFor="progress" className="text-sm font-medium text-stone-700">
+          진도 (선택)
+        </label>
+        <input
+          id="progress"
+          name="progress"
+          type="text"
+          placeholder="예: 문제집 45~52p, 3단원"
           className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
         />
       </div>

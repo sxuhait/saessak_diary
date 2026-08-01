@@ -5,6 +5,7 @@ import { SessionLogForm } from "./session-log-form";
 import { LogCalendar } from "./log-calendar";
 import { SessionLogList } from "./session-log-list";
 import { ClassEnrollments } from "./class-enrollments";
+import { SubjectSummary } from "./subject-summary";
 
 export default async function MenteeSessionLogPage({
   params,
@@ -30,7 +31,7 @@ export default async function MenteeSessionLogPage({
 
   const { data: logs, error: logsError } = await supabase
     .from("session_logs")
-    .select("id, session_date, subject, content")
+    .select("id, session_date, subject, progress, content")
     .eq("mentee_id", menteeId)
     .order("session_date", { ascending: false })
     .order("created_at", { ascending: false });
@@ -102,6 +103,8 @@ export default async function MenteeSessionLogPage({
       <SessionLogForm menteeId={mentee.id} />
 
       <LogCalendar logs={logs ?? []} />
+
+      <SubjectSummary logs={logs ?? []} />
 
       <div className="flex w-full flex-col gap-3">
         <h2 className="text-sm font-medium text-stone-500">지난 일지</h2>

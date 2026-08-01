@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { logout } from "./actions";
+import { EventsCalendar } from "./events/events-calendar";
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
@@ -29,40 +29,32 @@ function getWeekRange(today: Date) {
 export default async function HomePage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const { count: menteeCount } = await supabase
     .from("mentees")
     .select("*", { count: "exact", head: true });
 
+  const { data: events, error: eventsError } = await supabase
+    .from("center_events")
+    .select("id, title, event_type, start_date, end_date, location, description")
+    .order("start_date");
+
   const today = new Date();
   const { start, end } = getWeekRange(today);
-
-  const { data: weekEvents } = await supabase
-    .from("center_events")
-    .select("id, title")
-    .lte("start_date", end)
-    .gte("end_date", start)
-    .order("start_date");
+  const weekEvents = (events ?? []).filter(
+    (event) => event.start_date <= end && event.end_date >= start,
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-stone-900">홈</h1>
-          <p className="mt-1 text-sm text-stone-500">{user?.email}</p>
-        </div>
-        <form action={logout}>
-          <button
-            type="submit"
-            className="text-sm text-stone-500 underline hover:text-emerald-700"
-          >
-            로그아웃
-          </button>
-        </form>
-      </header>
+      <h1 className="text-xl font-semibold text-stone-900">홈</h1>
+
+      {eventsError && (
+        <p className="text-sm text-red-600">
+          센터 행사를 불러오지 못했습니다: {eventsError.message}
+        </p>
+      )}
+
+      <EventsCalendar events={events ?? []} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-stone-200 bg-white p-4">
@@ -88,9 +80,9 @@ export default async function HomePage() {
         >
           <p className="text-xs text-stone-500">이번 주 센터 행사</p>
           <p className="mt-1 text-2xl font-semibold text-emerald-700">
-            {weekEvents?.length ?? 0}건
+            {weekEvents.length}건
           </p>
-          {weekEvents && weekEvents.length > 0 && (
+          {weekEvents.length > 0 && (
             <ul className="mt-2 flex flex-col gap-0.5">
               {weekEvents.slice(0, 2).map((event) => (
                 <li key={event.id} className="truncate text-xs text-stone-500">
@@ -101,13 +93,6 @@ export default async function HomePage() {
           )}
         </Link>
       </div>
-
-      <Link
-        href="/classes"
-        className="text-sm text-emerald-700 hover:text-emerald-800"
-      >
-        센터 수업 관리 →
-      </Link>
     </div>
   );
 }

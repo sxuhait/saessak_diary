@@ -23,6 +23,7 @@ export async function createSessionLog(
 
   const sessionDate = String(formData.get("session_date") ?? "");
   const subject = String(formData.get("subject") ?? "").trim();
+  const progress = String(formData.get("progress") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
 
   if (!sessionDate || !content) {
@@ -34,6 +35,7 @@ export async function createSessionLog(
     mentor_id: user.id,
     session_date: sessionDate,
     subject: subject || null,
+    progress: progress || null,
     content,
   });
 
@@ -64,6 +66,7 @@ export async function updateSessionLog(
 
   const sessionDate = String(formData.get("session_date") ?? "");
   const subject = String(formData.get("subject") ?? "").trim();
+  const progress = String(formData.get("progress") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
 
   if (!sessionDate || !content) {
@@ -75,6 +78,7 @@ export async function updateSessionLog(
     .update({
       session_date: sessionDate,
       subject: subject || null,
+      progress: progress || null,
       content,
     })
     .eq("id", logId);

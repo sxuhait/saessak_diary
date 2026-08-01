@@ -9,6 +9,7 @@ type LogSummary = {
   id: string;
   session_date: string;
   subject: string | null;
+  progress: string | null;
   content: string;
 };
 
@@ -75,6 +76,11 @@ export function LogCalendar({ logs }: { logs: LogSummary[] }) {
                     <span className="mb-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
                       {log.subject}
                     </span>
+                  )}
+                  {log.progress && (
+                    <p className="mb-1 text-xs text-stone-500">
+                      진도: {log.progress}
+                    </p>
                   )}
                   <p className="whitespace-pre-wrap text-sm text-stone-700">
                     {log.content}
