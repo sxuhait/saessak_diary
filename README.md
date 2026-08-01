@@ -1,36 +1,46 @@
-이 프로젝트는 [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app)으로 부트스트랩한 [Next.js](https://nextjs.org) 프로젝트입니다.
+# 새싹일기 (saessak_diary)
 
-## 시작하기
+## 프로젝트 소개
 
-먼저 개발 서버를 실행하세요:
+- 지역아동센터 대학생 멘토를 위한 멘토링 코파일럿 웹앱입니다.
+- 누적된 일지·출석 데이터를 분석해 아동별 학습 취약점과 다음 지도 방향을 제안하는 것이 목표입니다. (AI 분석은 아직 준비 중이며, 우선은 규칙 기반 진단부터 제공합니다.)
 
-```bash
-npm run dev
-# 또는
-yarn dev
-# 또는
-pnpm dev
-# 또는
-bun dev
-```
+## 해결하려는 문제
 
-브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 결과를 확인하세요.
+- 멘토가 여러 아이를 담당하며 회차별 변화를 스스로 추적하기 어렵습니다.
+- 학습 취약점 파악이 멘토 개인의 기억·감에 의존하게 됩니다.
+- 출석/스케줄 관리가 따로 안 돼 결석 반복을 놓치기 쉽습니다.
 
-`app/page.tsx` 파일을 수정하면서 페이지 편집을 시작할 수 있습니다. 파일을 수정하면 페이지가 자동으로 업데이트됩니다.
+## 주요 기능
 
-이 프로젝트는 [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts)를 사용해 Vercel의 새로운 폰트 패밀리인 [Geist](https://vercel.com/font)를 자동으로 최적화하고 불러옵니다.
+- 로그인 (Supabase Auth 이메일/비밀번호)
+- 멘티 관리 + 간편 일지 작성/이력 (과목·진도 기록)
+- 출석 체크 (출석/결석/지각/사유결석 + 사유)
+- 멘티별 월간 달력, 규칙 기반 학습 진단 (방치 과목·결석 패턴·학습 빈도·과목 편중 감지)
+- 마이페이지: 프로필(이름) 수정, 담당 멘티 요약, 챙길 멘티 알림, 최근 작성한 일지
+- 센터 공용 행사 달력, 요일별 수업 관리 + 수강 등록, 주간 시간표(현재는 고정 템플릿)
 
-## 더 알아보기
+## 기술 스택
 
-Next.js에 대해 더 알아보려면 다음 자료를 참고하세요:
+- Next.js (App Router), TypeScript, Tailwind CSS
+- Supabase (Postgres, Auth, RLS)
 
-- [Next.js 문서](https://nextjs.org/docs) - Next.js 기능과 API에 대해 알아보세요.
-- [Learn Next.js](https://nextjs.org/learn) - 인터랙티브 Next.js 튜토리얼.
+## 시작하기 (로컬 실행)
 
-[Next.js GitHub 저장소](https://github.com/vercel/next.js)도 확인해보세요 - 피드백과 기여를 환영합니다!
+1. `.env.local` 파일을 만들고 아래 값을 채워주세요 (`.env.example` 참고, Supabase 프로젝트 설정 → API에서 확인):
 
-## Vercel에 배포하기
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=
+   ```
 
-Next.js 앱을 배포하는 가장 쉬운 방법은 Next.js를 만든 팀이 제공하는 [Vercel 플랫폼](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme)을 사용하는 것입니다.
+2. 의존성 설치 후 개발 서버 실행:
 
-자세한 내용은 [Next.js 배포 문서](https://nextjs.org/docs/app/building-your-application/deploying)를 확인하세요.
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+3. 브라우저에서 [http://localhost:3000](http://localhost:3000) 접속
+
+아키텍처, 데이터 모델, 라우트 구조 등 더 자세한 내용은 `CLAUDE.md`를 참고하세요.
