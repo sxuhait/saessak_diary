@@ -41,6 +41,9 @@ supabase_pwd.txt
 # vercel
 .vercel
 
+# playwright mcp temp logs
+.playwright-mcp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
