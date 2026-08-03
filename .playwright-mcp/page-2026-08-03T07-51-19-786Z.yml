@@ -1,0 +1,30 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "멘토 로그인" [level=1] [ref=e5]
+      - paragraph [ref=e6]: 새싹 다이어리에 오신 것을 환영합니다.
+    - generic [ref=e7]:
+      - text: 이메일
+      - textbox "이메일" [ref=e8]: test@test.com
+    - generic [ref=e9]:
+      - text: 비밀번호
+      - textbox "비밀번호" [ref=e10]: "-dYJ6q/s%FQny_g"
+    - button "로그인" [ref=e11]
+    - paragraph [ref=e12]:
+      - text: 아직 계정이 없으신가요?
+      - link "회원가입" [ref=e13] [cursor=pointer]:
+        - /url: /signup
+  - navigation [ref=e14]:
+    - generic [ref=e15]:
+      - link "홈" [ref=e16] [cursor=pointer]:
+        - /url: /
+      - link "멘티" [ref=e21] [cursor=pointer]:
+        - /url: /mentees
+      - link "수업" [ref=e28] [cursor=pointer]:
+        - /url: /classes
+      - link "행사" [ref=e33] [cursor=pointer]:
+        - /url: /events
+      - link "내 정보" [ref=e37] [cursor=pointer]:
+        - /url: /profile
+  - button "Open Next.js Dev Tools" [ref=e48] [cursor=pointer]
+  - alert [ref=e52]
