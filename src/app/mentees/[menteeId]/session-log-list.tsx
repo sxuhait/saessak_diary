@@ -11,6 +11,7 @@ type SessionLog = {
   subject: string | null;
   progress: string | null;
   content: string;
+  authorName: string | null;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -191,6 +192,11 @@ export function SessionLogList({ logs }: { logs: SessionLog[] }) {
                 </span>
               )}
             </div>
+            {log.authorName && (
+              <p className="mt-0.5 text-xs text-stone-500">
+                작성 멘토: {log.authorName}
+              </p>
+            )}
             {log.progress && (
               <p className="mt-2 text-xs text-stone-500">
                 진도: {log.progress}

@@ -28,6 +28,12 @@ export function LoginForm({ notice }: { notice?: string }) {
         </p>
       )}
 
+      {notice === "expired" && (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+          봉사 활동 기간이 종료되었습니다. 관리자에게 문의하세요.
+        </p>
+      )}
+
       <div className="space-y-1">
         <label htmlFor="email" className="text-sm font-medium text-stone-700">
           이메일

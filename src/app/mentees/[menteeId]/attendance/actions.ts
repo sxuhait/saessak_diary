@@ -39,10 +39,7 @@ export async function setAttendance(
   );
 
   if (error) {
-    return {
-      error:
-        "출석 저장에 실패했습니다. 이 멘티가 나에게 배정되어 있는지 확인해주세요.",
-    };
+    return { error: "출석 저장에 실패했습니다. 잠시 후 다시 시도해주세요." };
   }
 
   refresh();

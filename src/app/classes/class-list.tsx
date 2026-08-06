@@ -141,7 +141,13 @@ function EditClassForm({
   );
 }
 
-export function ClassList({ classes }: { classes: ClassItem[] }) {
+export function ClassList({
+  classes,
+  isAdmin,
+}: {
+  classes: ClassItem[];
+  isAdmin: boolean;
+}) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<{
@@ -222,28 +228,30 @@ export function ClassList({ classes }: { classes: ClassItem[] }) {
                     </p>
                   )}
 
-                  <div className="mt-3 flex items-center gap-2 border-t border-stone-100 pt-3">
-                    <button
-                      type="button"
-                      onClick={() => setEditingId(item.id)}
-                      className="rounded-md border border-emerald-600 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
-                    >
-                      수정
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(item)}
-                      disabled={deletingId === item.id}
-                      className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-                    >
-                      {deletingId === item.id ? "삭제 중..." : "삭제"}
-                    </button>
-                    {deleteError?.id === item.id && (
-                      <span className="text-xs text-red-600">
-                        {deleteError.message}
-                      </span>
-                    )}
-                  </div>
+                  {isAdmin && (
+                    <div className="mt-3 flex items-center gap-2 border-t border-stone-100 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(item.id)}
+                        className="rounded-md border border-emerald-600 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+                      >
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item)}
+                        disabled={deletingId === item.id}
+                        className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      >
+                        {deletingId === item.id ? "삭제 중..." : "삭제"}
+                      </button>
+                      {deleteError?.id === item.id && (
+                        <span className="text-xs text-red-600">
+                          {deleteError.message}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </li>
               ),
             )}

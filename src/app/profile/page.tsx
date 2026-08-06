@@ -130,7 +130,7 @@ export default async function ProfilePage() {
       </div>
 
       <div className="rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-sm font-medium text-stone-500">내 담당 멘티</h2>
+        <h2 className="text-sm font-medium text-stone-500">전체 멘티</h2>
         <p className="mt-1 text-2xl font-semibold text-emerald-700">
           {mentees?.length ?? 0}명
         </p>
@@ -150,7 +150,7 @@ export default async function ProfilePage() {
           </ul>
         ) : (
           <p className="mt-2 text-sm text-stone-500">
-            아직 배정된 멘티가 없습니다.
+            등록된 멘티가 없습니다.
           </p>
         )}
       </div>

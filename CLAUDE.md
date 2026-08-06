@@ -69,10 +69,11 @@ npx supabase gen types typescript --linked > src/lib/database.types.ts
 | 라우트 | 설명 |
 | --- | --- |
 | `/login` | 이메일/비밀번호 로그인 (Supabase Auth), `/auth/*` 외에 유일한 공개 라우트 |
-| `/` | 홈 대시보드: 오늘 날짜, 내 멘티 수, 이번 주 센터 행사 건수, `/mentees`와 `/events`로 가는 링크 |
-| `/mentees` | 로그인한 멘토에게 배정된 멘티 목록 (RLS가 필터링을 처리 — 쿼리에 별도 join 불필요) |
-| `/mentees/[menteeId]` | 수업 일지 작성 폼(날짜, 과목, 진도, 내용) + 해당 멘티 일지의 월간 달력(일지가 있는 날에 점 표시, 날짜 클릭 시 그날 일지 확인) + 과목별 학습 현황 표(과목별 마지막 학습일/경과일수/최근 진도, 14일 이상이면 방치 경고 — `subject-summary.tsx` 참고) + 전체 일지 목록(시간순) |
+| `/` | 홈 대시보드: 오늘 날짜, 전체 멘티 수, 이번 주 센터 행사 건수, `/mentees`와 `/events`로 가는 링크 |
+| `/mentees` | 센터 전체 멘티 명단(공용, 담당 배정 없음 — RLS는 로그인 + 만료되지 않은 계정인지만 확인, 쿼리에 별도 join 불필요) |
+| `/mentees/[menteeId]` | 수업 일지 작성 폼(날짜, 과목, 진도, 내용) + 해당 멘티 일지의 월간 달력(일지가 있는 날에 점 표시, 날짜 클릭 시 그날 일지 확인) + 과목별 학습 현황 표(과목별 마지막 학습일/경과일수/최근 진도, 14일 이상이면 방치 경고 — `subject-summary.tsx` 참고) + 전체 일지 목록(시간순, 각 일지에 "작성 멘토" 표시) |
 | `/mentees/[menteeId]/attendance` | 출석 전용 별도 월간 달력. 날짜 클릭 → 출석/결석/지각/사유결석 버튼; 지각/사유결석 선택 시 사유 입력란 노출(`attendance.reason`에 저장); 같은 날짜를 다시 클릭하면 저장된 상태를 다시 불러옴 |
+| `/classes` | 센터 수업(외부 강사) 관리. 목록/달력은 모든 로그인 사용자가 보지만, 새 수업 추가·수정·삭제는 `role = 'admin'`만 가능(서버 액션 + RLS 이중 체크, `classes/page.tsx`가 역할을 조회해 `isAdmin`을 `NewClassForm`/`ClassList`에 내려줌). 이번 주 휴강 처리(`class_cancellations`)는 관리자 제한 없이 모든 로그인 사용자가 가능 — 카탈로그 관리가 아니라 그날그날의 운영이라 별도로 다룸 |
 | `/events` | 센터 전체 행사 달력(견학, 캠프), 멘티 배정과 무관하게 모든 멘토가 공유. 날짜 클릭 시 그날의 행사를 보거나 추가 |
 | `/events/[eventId]` | 행사 상세 — 인라인 보기 ↔ 수정 전환과 삭제(확인 다이얼로그 후 `/events`로 리다이렉트) 지원 |
 | `/schedule` | 센터 주간 시간표 (월~금 × 09:00~20:00), `schedule/page.tsx`에 하드코딩됨 — 아직 `center_schedule` 테이블이 없어서 편집 UI가 만들어지기 전까지는 표시 전용 |
@@ -102,40 +103,53 @@ npx supabase gen types typescript --linked > src/lib/database.types.ts
 
 ## 데이터 모델 (`supabase/migrations/`)
 
-열 개의 마이그레이션에 걸쳐 아홉 개의 테이블이 있습니다:
+열두 개의 마이그레이션에 걸쳐 여덟 개의 테이블이 있습니다:
 
 1. `20260728121422_init_schema.sql` — `mentors`, `mentees`, `weekday_registrations`, `attendance`, `session_logs`.
-2. `20260728125543_tighten_rls_mentor_scope.sql` — RLS 허점을 막음 (아래 참고).
+2. `20260728125543_tighten_rls_mentor_scope.sql` — RLS 허점을 막음 (역사적 기록 — 이후 12번 마이그레이션에서 멘토 범위 제한 자체가 다시 제거됩니다).
 3. `20260728143715_add_attendance_reason.sql` — `attendance.reason` 추가.
 4. `20260728145946_add_center_events.sql` — `center_events`와 `center_event_type` enum 추가.
 5. `20260729124812_add_center_event_schedule_and_photos.sql` — `center_events.schedule`과 `center_events.photo_urls` 추가.
-6. `20260730134002_add_classes.sql` — `classes`(`center_events`처럼 공유) + `class_enrollments`(멘티↔수업, `session_logs`처럼 멘토 범위 제한) 추가.
+6. `20260730134002_add_classes.sql` — `classes`(`center_events`처럼 공유) + `class_enrollments`(멘티↔수업) 추가.
 7. `20260730142008_add_class_cancellations.sql` — `class_cancellations` 추가, 수업의 주간 반복 일정에 대한 날짜별 예외.
-8. `20260730144602_add_attendance_delete_policy.sql` — 빠져 있던 `attendance` DELETE 정책 추가 (멘토 범위 제한, UPDATE 정책과 동일한 형태).
+8. `20260730144602_add_attendance_delete_policy.sql` — 빠져 있던 `attendance` DELETE 정책 추가.
 9. `20260730145338_add_class_color.sql` — 수업별 달력 점 표시를 위한 `classes.color`(`class_color` enum) 추가.
 10. `20260801120000_add_session_log_progress.sql` — `session_logs.progress` 추가.
+11. `20260806120000_add_mentor_role_and_expiration.sql` — `mentors.role`(`mentor_role` enum)과 `mentors.reactivated_at` 추가, 봉사자 만료 판단 함수 3종 추가, 멘토 범위 제한 RLS 정책 전체에 만료 체크 추가 (아래 "역할과 봉사자 만료" 참고).
+12. `20260806130000_shared_mentee_roster_and_class_admin.sql` — **"담당 멘토" 개념 제거**: `mentees`/`attendance`/`session_logs`/`class_enrollments`의 멘토 범위 제한 RLS를 `center_events`와 같은 완전 공유 모델로 전환하고, 더 이상 쓸모없어진 `weekday_registrations` 테이블(과 `attendance.weekday_registration_id` 컬럼)을 삭제. `public.current_mentor_role()` 함수를 추가하고 `classes`의 insert/update/delete를 `role = 'admin'` 전용으로 제한 (아래 "공용 멘티 명단" 참고).
 
 ### 테이블
 
-- **`mentors`** — 멘토당 한 행, `id` = `auth.users.id`. 가입 시 트리거(`handle_new_mentor`)로 자동 생성됨.
-- **`mentees`** — 아이들. `name`, `birth_date`, `school`, `grade`, `guardian_contact`, `notes`.
-- **`weekday_registrations`** — `(mentee_id, mentor_id, day_of_week)`, `day_of_week`는 `0`(일)~`6`(토). 멘티가 멘토와 연결되는 방식이 바로 이것입니다 — `mentee.mentor_id` 컬럼은 따로 없습니다. **"어느 멘토가 어느 멘티를 담당하는가"에 대한 단일 진실 공급원(source of truth)이 바로 이 테이블**이며, 아래의 범위 제한 RLS 정책들은 모두 이 테이블을 기준으로 표현됩니다. 아직 이 테이블에 쓰는 UI는 없고(로드맵 참고) Supabase SQL 에디터로 직접 데이터를 넣습니다.
-- **`attendance`** — `(mentee_id, session_date)`당 한 행(고유 제약), `status`는 `attendance_status` enum(`present`/`absent`/`late`/`excused`), 선택적으로 `reason` 텍스트(`late`, `excused`에 사용), 이 출석이 어느 `weekday_registration`을 충족하는지 가리키는 선택적 링크.
-- **`session_logs`** — `(mentee_id, session_date)`당 멘토가 자유롭게 작성하는 기록, 선택적으로 `subject`(자유 텍스트지만 `src/lib/subjects.ts`의 `COMMON_SUBJECTS`에서 datalist로 빠르게 고를 수 있어 그룹화할 만큼은 일관성을 유지함), 선택적으로 `progress`(짧은 자유 텍스트, 예: "문제집 45~52p", 멘티 페이지의 과목별 학습 현황 집계에서 읽음 — 아래 참고), `attendance` 행에 대한 선택적 링크. 앞으로 AI 분석이 멘티별로 시간에 걸쳐 읽어들일 테이블입니다.
-- **`classes`** — 센터에서 운영하는 수업(외부 강사 수업), `center_events`처럼 공유: `name`, `day_of_week`, `teacher_name`, `description`, `color`(달력 점 표시용 `class_color` enum). `class_enrollments`는 멘티↔수업 조인 테이블이며 `session_logs`/`attendance`처럼 멘토 범위로 제한됩니다. `class_cancellations`는 수업의 주간 반복 일정에 대한 날짜별 예외를 담습니다.
+- **`mentors`** — 멘토당 한 행, `id` = `auth.users.id`. 가입 시 트리거(`handle_new_mentor`)로 자동 생성됨. `role`(`mentor_role` enum: `mentor`/`volunteer`/`admin`, 기본값 `mentor`)과 `reactivated_at`(nullable, 관리자가 봉사자를 재활성화할 때 채우는 타임스탬프)도 여기 있습니다 — 아래 "역할과 봉사자 만료" 참고.
+- **`mentees`** — 아이들. `name`, `birth_date`, `school`, `grade`, `guardian_contact`, `notes`. **담당 멘토라는 개념이 없습니다** — 센터의 모든 로그인 사용자가 전체 명단을 공유해서 봅니다.
+- **`attendance`** — `(mentee_id, session_date)`당 한 행(고유 제약), `status`는 `attendance_status` enum(`present`/`absent`/`late`/`excused`), 선택적으로 `reason` 텍스트(`late`, `excused`에 사용). `mentor_id`는 이 출석을 누가 기록했는지 나타내는 정보성 컬럼일 뿐, 접근 제어에는 쓰이지 않습니다(`center_events.created_by`와 같은 역할).
+- **`session_logs`** — `(mentee_id, session_date)`당 자유롭게 작성하는 기록, 선택적으로 `subject`(자유 텍스트지만 `src/lib/subjects.ts`의 `COMMON_SUBJECTS`에서 datalist로 빠르게 고를 수 있어 그룹화할 만큼은 일관성을 유지함), 선택적으로 `progress`(짧은 자유 텍스트, 예: "문제집 45~52p", 멘티 페이지의 과목별 학습 현황 집계에서 읽음 — 아래 참고), `attendance` 행에 대한 선택적 링크. `mentor_id`는 이 일지를 누가 썼는지("작성 멘토", UI에 표시됨)를 나타내는 정보성 컬럼입니다 — insert 시점에 작성자로 고정되며, 다른 사용자가 나중에 내용을 수정해도 바뀌지 않습니다. 앞으로 AI 분석이 멘티별로 시간에 걸쳐 읽어들일 테이블입니다.
+- **`classes`** — 센터에서 운영하는 수업(외부 강사 수업): `name`, `day_of_week`, `teacher_name`, `description`, `color`(달력 점 표시용 `class_color` enum). 조회는 모두에게 열려 있지만 추가/수정/삭제는 관리자 전용입니다(아래 "공용 멘티 명단" 참고). `class_enrollments`는 멘티↔수업 조인 테이블, 완전 공유. `class_cancellations`는 수업의 주간 반복 일정에 대한 날짜별 예외이며 관리자 제한 없이 완전 공유(카탈로그 관리가 아니라 그날그날의 운영이라 관리자 제한 대상이 아닙니다).
 - **`center_events`** — `title`, `event_type`(enum: `field_trip`/`camp`/`other`), `start_date`/`end_date`(여러 날에 걸친 범위, `end_date >= start_date` 체크), `location`, `description`(짧은 소개), `schedule`(더 긴 자유 형식 일정 텍스트), `photo_urls`(`text[]`, 기본값 `{}` — **컬럼은 있지만 아직 업로드 UI나 Storage 버킷은 연결되어 있지 않음**), `created_by`(nullable, `on delete set null`, RLS에는 사용되지 않고 그냥 정보성).
 
-### RLS 요약
+`weekday_registrations`는 더 이상 존재하지 않습니다 — 이전에는 "어느 멘토가 어느 멘티를 담당하는가"의 단일 진실 공급원이었지만, 이 센터는 담당제를 쓰지 않는 것으로 확인되어 12번 마이그레이션에서 테이블 자체와 `attendance.weekday_registration_id` FK 컬럼을 함께 삭제했습니다. 애플리케이션 코드 어디에서도 참조하지 않던 테이블이라(SQL 에디터로 수동 입력하는 용도 외에는 UI 없음) 다른 의미로 재활용하지 않고 정리했습니다.
 
-- **`mentees`, `attendance`, `session_logs`**는 `weekday_registrations`를 통해 멘토 범위로 제한됩니다: `weekday_registrations` 행이 해당 멘티를 `auth.uid()`와 연결해줄 때만 멘토가 그 멘티(와 그 멘티의 attendance/session_logs)를 SELECT할 수 있습니다. `attendance`/`session_logs`의 INSERT/UPDATE는 추가로 `mentor_id = auth.uid()`**와** 동일한 배정 확인을 요구합니다 — 멘티 id를 알고 있어도 다른 멘토의 멘티에 대해 일지를 쓰거나 출석을 표시할 수 없습니다. `session_logs`의 DELETE는 `mentor_id = auth.uid()`만 확인합니다.
-- **`mentees` INSERT**는 인증된 멘토라면 누구나 가능합니다(멘티 레코드를 만드는 것 자체는 멘토를 배정하지 않으며, 그건 `weekday_registrations`를 통해 별도로 이루어집니다). 멘티를 만들었지만 자기 자신의 `weekday_registrations` 행을 추가하지 않은 멘토는 그 행을 추가하기 전까지 다시 볼 수 없습니다. 아직 멘티 생성 UI는 없으니 테스트할 때는 Supabase 대시보드로 행을 추가하세요.
-- **`weekday_registrations`**: 멘토는 자기 자신의 배정 행만(`mentor_id = auth.uid()`) 보고/추가하고/수정하고/삭제할 수 있으며, 다른 멘토의 일정은 볼 수 없습니다.
-- **`center_events`**, **`classes`**, **`class_cancellations`**는 의도적으로 위 테이블들처럼 범위 제한을 **하지 않습니다** — select/insert/update/delete 모두 인증된 멘토라면 누구나 완전히 공유하는 CRUD(`using (true)` / `with check (true)`)입니다. 이들은 멘토별 데이터가 아니라 센터 전체 데이터이기 때문입니다. `weekday_registrations` 기반의 범위 제한 패턴을 이 테이블들에 그대로 적용하지 마세요.
-- **`class_enrollments`**는 `session_logs`/`attendance`와 같은 방식으로 멘토 범위 제한이 걸려 있습니다: 멘토는 `weekday_registrations`를 통해 자신에게 배정된 멘티의 수강 신청 행만 보고/추가하고/삭제할 수 있습니다.
-- 센터가 여러 개의 독립된 지점으로 확장되거나, 멘티가 다른 멘토에게 재배정되면서도 기존 멘토가 자신이 작성한 일지에 대한 읽기 권한은 유지해야 하는 상황이 생긴다면 이 멘토 범위 제한 모델을 다시 검토하세요.
+### 공용 멘티 명단과 역할 기반 권한
+
+- **`mentees`, `attendance`, `session_logs`, `class_enrollments`는 완전히 공유됩니다** — `center_events`/`classes` 조회와 동일한 모델로, 로그인했고(그리고 봉사자라면 만료되지 않은) 사용자라면 누구나 전체 멘티 명단·출석·일지·수강 정보를 보고 쓸 수 있습니다. `attendance`/`session_logs`의 INSERT는 `mentor_id = auth.uid()`로 작성자를 고정하지만, SELECT/UPDATE/DELETE에는 어떤 배정/작성자 조건도 없습니다 — 이미 써진 기록도 아무나 고칠 수 있습니다(동료의 오타를 고치는 것 같은 상황을 막지 않으려는 의도). 모든 쓰기(insert/update/delete)에는 `not public.current_mentor_blocked()`가 붙어 만료된 봉사자를 막습니다.
+- **`classes`는 조회만 완전 공유이고, insert/update/delete는 `role = 'admin'`만 가능합니다.** `public.current_mentor_role() returns mentor_role`(RLS에서 호출하는 `security definer`가 아닌 일반 함수 — 호출자 자신의 `mentors` 행은 이미 "mentors can view their own profile" 정책으로 읽을 수 있으므로 필요 없음)로 판단합니다. 애플리케이션 레벨에서도 이중으로 막습니다: `src/app/classes/actions.ts`의 `createClass`/`updateClass`/`deleteClass`가 각각 `mentors.role`을 조회해 `admin`이 아니면 한국어 에러를 반환하고, `src/app/classes/page.tsx`가 역할을 조회해 `isAdmin`을 `NewClassForm`/`ClassList`에 내려줘서 비관리자에게는 추가/수정/삭제 UI 자체를 숨깁니다. `class_cancellations`(이번 주 휴강 처리)는 이 제한에서 제외되어 있습니다 — 카탈로그 자체를 바꾸는 게 아니라 매주 운영하는 성격이라 모든 로그인 사용자가 계속 할 수 있습니다.
+- **`center_events`, `class_cancellations`**는 여전히 범위 제한이나 role 제한이 전혀 없는 완전 공유 CRUD(`using (true)` / `with check (true)`)입니다. **만료 체크도 이 테이블들의 RLS에는 걸려 있지 않습니다** — 대신 `proxy.ts`가 만료된 봉사자의 페이지 접근 자체를 전부 막으므로 앱 레벨에서는 여전히 차단됩니다.
+- 센터가 여러 개의 독립된 지점으로 확장되어 지점별로 멘티를 분리해야 하는 상황이 생긴다면 이 완전 공유 모델을 다시 검토하세요.
+
+### 역할과 봉사자 만료
+
+- 세 가지 역할: `mentor`(멘토), `volunteer`(봉사자), `admin`(관리자). 멘토와 봉사자는 로그인 후 화면/기능이 완전히 동일합니다 — 역할은 오직 봉사자 만료 로직에만 쓰입니다. 관리자 역할은 회원가입 화면에서 선택할 수 없고(가입 폼은 `mentor`/`volunteer`만 허용, `handle_new_mentor` 트리거가 그 외 값은 전부 `mentor`로 강등시킵니다), 지정하려면 SQL로 직접 `update mentors set role = 'admin' where id = '<uuid>'`를 실행해야 합니다. 관리자 전용 화면은 아직 없습니다.
+- 봉사자 만료 규칙: 마지막 활동(자신이 작성한 `session_logs`/`attendance` 행 중 가장 최근 `created_at`, 없으면 `mentors.created_at` 가입일) 후 30일이 지나면 접근이 막힙니다. 판단 로직은 세 함수로 분리되어 있습니다 (`supabase/migrations/20260806120000_add_mentor_role_and_expiration.sql`):
+  - `public.mentor_last_activity(p_mentor_id uuid) returns timestamptz` — 마지막 활동 시각 계산 (`session_logs`/`attendance` 최댓값, `mentors.reactivated_at`, `mentors.created_at` 중 가장 늦은 값).
+  - `public.is_volunteer_expired(p_mentor_id uuid) returns boolean` — 임의의 멘토 id에 대해 만료 여부 판단. 재사용 가능하도록 분리되어 있어 나중에 관리자 화면/배치 작업에서 그대로 호출할 수 있습니다.
+  - `public.current_mentor_blocked() returns boolean` — `is_volunteer_expired(auth.uid())`의 래퍼, RLS 정책과 RPC 호출에서 편하게 쓰기 위한 것.
+  - 세 함수 모두 `security definer`라 RLS를 우회해서 다른 멘토의 session_logs/attendance까지 읽을 수 있고, `execute` 권한은 `authenticated`로만 제한되어 있습니다(다른 멘토의 만료 여부를 익명으로 조회하지 못하도록).
+- **관리자가 봉사자를 재활성화(기간 연장)하려면** `update mentors set reactivated_at = now() where id = '<uuid>'`를 실행하면 됩니다 — 실제 활동 기록이 없어도 이 시각부터 30일이 다시 주어집니다.
+- 3중 방어: (1) 위 RLS 정책들, (2) `src/lib/supabase/proxy.ts`가 공개 경로가 아닌 모든 요청마다 `is_volunteer_expired` RPC를 호출해서 만료된 사용자를 로그아웃시키고 `/login?notice=expired`로 리다이렉트, (3) `src/app/login/actions.ts`의 `login` 액션이 비밀번호 확인 직후 같은 RPC로 재확인해서 만료된 계정은 즉시 로그아웃 후 에러 메시지를 보여줍니다. 세 곳 다 서버 사이드이며, 클라이언트에서 role을 보고 숨기는 방식이 아닙니다.
 
 ## 로드맵 (아직 만들지 않음)
 
-- **멘티 생성 / 요일 배정 UI** — 둘 다 현재는 Supabase 대시보드/SQL 에디터로 직접 입력합니다.
+- **멘티 생성 UI** — 현재는 Supabase 대시보드/SQL 에디터로 직접 입력합니다.
+- **관리자 전용 화면** — 봉사자 재활성화(`mentors.reactivated_at`)와 역할 지정(`mentors.role = 'admin'`)은 아직 UI가 없고 SQL로만 가능합니다.
 - **센터 행사 사진 업로드** — `center_events.photo_urls` 컬럼(`text[]`)은 있지만, 아직 Supabase Storage 버킷도, 업로드 UI도, 행사 상세 페이지에서 사진을 보여주는 기능도 없습니다.
-- **`session_logs`에 대한 AI 분석** — 멘티별 전체 이력을 읽어서 취약점을 찾아내고 다음 수업 제안을 만듭니다. 실행 중인 멘토 본인의 것만이 아니라 해당 멘티에 대한 모든 멘토의 일지를 읽어야 하므로 service-role이나 edge function 경로가 필요할 것입니다 (현재 RLS는 의도적으로 멘토를 자신에게 배정된 멘티로만 제한합니다).
+- **`session_logs`에 대한 AI 분석** — 멘티별 전체 이력을 읽어서 취약점을 찾아내고 다음 수업 제안을 만듭니다. `session_logs` RLS가 이제 완전 공유라 클라이언트 세션으로도 모든 멘티의 전체 이력을 읽을 수 있으므로(더 이상 담당 배정으로 막혀 있지 않음), service-role/edge function이 필수는 아니지만 여전히 무거운 배치 작업이라면 분리하는 편이 나을 수 있습니다.

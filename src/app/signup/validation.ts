@@ -1,11 +1,19 @@
+export type SignupRole = "mentor" | "volunteer";
+
 export type SignupInput = {
   name: string;
   email: string;
   password: string;
+  role: string;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 6;
+const SIGNUP_ROLES: SignupRole[] = ["mentor", "volunteer"];
+
+export function isSignupRole(role: string): role is SignupRole {
+  return (SIGNUP_ROLES as string[]).includes(role);
+}
 
 export function validateSignupInput(input: SignupInput): string | null {
   if (!input.name) {
@@ -22,6 +30,9 @@ export function validateSignupInput(input: SignupInput): string | null {
   }
   if (input.password.length < MIN_PASSWORD_LENGTH) {
     return `비밀번호는 최소 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`;
+  }
+  if (!isSignupRole(input.role)) {
+    return "역할을 선택해주세요.";
   }
   return null;
 }

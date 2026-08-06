@@ -1,4 +1,4 @@
-// day_of_week convention shared with weekday_registrations: 0 = Sunday .. 6 = Saturday.
+// day_of_week convention shared with classes.day_of_week: 0 = Sunday .. 6 = Saturday.
 export const DAY_LABELS = [
   "일요일",
   "월요일",

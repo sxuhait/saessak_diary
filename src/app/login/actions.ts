@@ -17,13 +17,24 @@ export async function login(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
     return { error: "이메일 또는 비밀번호가 올바르지 않습니다." };
+  }
+
+  const { data: expired } = await supabase.rpc("is_volunteer_expired", {
+    p_mentor_id: data.user.id,
+  });
+
+  if (expired) {
+    await supabase.auth.signOut();
+    return {
+      error: "봉사 활동 기간이 종료되었습니다. 관리자에게 문의하세요.",
+    };
   }
 
   redirect("/");

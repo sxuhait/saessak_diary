@@ -48,7 +48,6 @@ export type Database = {
           reason: string | null
           session_date: string
           status: Database["public"]["Enums"]["attendance_status"]
-          weekday_registration_id: string | null
         }
         Insert: {
           created_at?: string
@@ -58,7 +57,6 @@ export type Database = {
           reason?: string | null
           session_date: string
           status?: Database["public"]["Enums"]["attendance_status"]
-          weekday_registration_id?: string | null
         }
         Update: {
           created_at?: string
@@ -68,7 +66,6 @@ export type Database = {
           reason?: string | null
           session_date?: string
           status?: Database["public"]["Enums"]["attendance_status"]
-          weekday_registration_id?: string | null
         }
         Relationships: [
           {
@@ -83,13 +80,6 @@ export type Database = {
             columns: ["mentor_id"]
             isOneToOne: false
             referencedRelation: "mentors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_weekday_registration_id_fkey"
-            columns: ["weekday_registration_id"]
-            isOneToOne: false
-            referencedRelation: "weekday_registrations"
             referencedColumns: ["id"]
           },
         ]
@@ -284,18 +274,24 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          reactivated_at: string | null
+          role: Database["public"]["Enums"]["mentor_role"]
         }
         Insert: {
           created_at?: string
           id: string
           name: string
           phone?: string | null
+          reactivated_at?: string | null
+          role?: Database["public"]["Enums"]["mentor_role"]
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           phone?: string | null
+          reactivated_at?: string | null
+          role?: Database["public"]["Enums"]["mentor_role"]
         }
         Relationships: []
       }
@@ -360,51 +356,18 @@ export type Database = {
           },
         ]
       }
-      weekday_registrations: {
-        Row: {
-          created_at: string
-          day_of_week: number
-          id: string
-          mentee_id: string
-          mentor_id: string
-        }
-        Insert: {
-          created_at?: string
-          day_of_week: number
-          id?: string
-          mentee_id: string
-          mentor_id: string
-        }
-        Update: {
-          created_at?: string
-          day_of_week?: number
-          id?: string
-          mentee_id?: string
-          mentor_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "weekday_registrations_mentee_id_fkey"
-            columns: ["mentee_id"]
-            isOneToOne: false
-            referencedRelation: "mentees"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "weekday_registrations_mentor_id_fkey"
-            columns: ["mentor_id"]
-            isOneToOne: false
-            referencedRelation: "mentors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_mentor_blocked: { Args: never; Returns: boolean }
+      current_mentor_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["mentor_role"]
+      }
+      is_volunteer_expired: { Args: { p_mentor_id: string }; Returns: boolean }
+      mentor_last_activity: { Args: { p_mentor_id: string }; Returns: string }
     }
     Enums: {
       attendance_status: "present" | "absent" | "late" | "excused"
@@ -418,6 +381,7 @@ export type Database = {
         | "indigo"
         | "teal"
         | "cyan"
+      mentor_role: "mentor" | "volunteer" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -560,6 +524,7 @@ export const Constants = {
         "teal",
         "cyan",
       ],
+      mentor_role: ["mentor", "volunteer", "admin"],
     },
   },
 } as const

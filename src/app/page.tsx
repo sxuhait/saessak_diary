@@ -108,7 +108,7 @@ export default async function HomePage() {
           href="/mentees"
           className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm hover:border-emerald-300 hover:bg-emerald-50"
         >
-          <p className="text-xs text-stone-500">내가 담당한 멘티</p>
+          <p className="text-xs text-stone-500">전체 멘티</p>
           <p className="mt-1 text-2xl font-semibold text-emerald-700">
             {menteeCount ?? 0}명
           </p>

@@ -30,12 +30,21 @@ export default async function MenteeSessionLogPage({
     notFound();
   }
 
-  const { data: logs, error: logsError } = await supabase
+  const { data: logRows, error: logsError } = await supabase
     .from("session_logs")
-    .select("id, session_date, subject, progress, content")
+    .select("id, session_date, subject, progress, content, mentors(name)")
     .eq("mentee_id", menteeId)
     .order("session_date", { ascending: false })
     .order("created_at", { ascending: false });
+
+  const logs = (logRows ?? []).map((log) => ({
+    id: log.id,
+    session_date: log.session_date,
+    subject: log.subject,
+    progress: log.progress,
+    content: log.content,
+    authorName: log.mentors?.name ?? null,
+  }));
 
   const { data: enrollmentRows } = await supabase
     .from("class_enrollments")

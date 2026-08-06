@@ -13,8 +13,9 @@ export async function signup(
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const role = String(formData.get("role") ?? "");
 
-  const input = { name, email, password };
+  const input = { name, email, password, role };
 
   const validationError = validateSignupInput(input);
   if (validationError) {
@@ -31,7 +32,7 @@ export async function signup(
     email,
     password,
     options: {
-      data: { name },
+      data: { name, role },
     },
   });
 

@@ -8,6 +8,18 @@ import { ClassCalendar } from "./class-calendar";
 export default async function ClassesPage() {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: mentor } = await supabase
+    .from("mentors")
+    .select("role")
+    .eq("id", user?.id ?? "")
+    .maybeSingle();
+
+  const isAdmin = mentor?.role === "admin";
+
   const { data: classes, error } = await supabase
     .from("classes")
     .select("id, name, day_of_week, teacher_name, description, color")
@@ -44,9 +56,15 @@ export default async function ClassesPage() {
         cancellations={cancellations ?? []}
       />
 
-      <NewClassForm defaultColor={suggestNextColor(classes?.length ?? 0)} />
+      {isAdmin ? (
+        <NewClassForm defaultColor={suggestNextColor(classes?.length ?? 0)} />
+      ) : (
+        <p className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-500">
+          새 수업 추가·수정·삭제는 관리자만 할 수 있습니다.
+        </p>
+      )}
 
-      <ClassList classes={classes ?? []} />
+      <ClassList classes={classes ?? []} isAdmin={isAdmin} />
     </div>
   );
 }

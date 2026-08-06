@@ -16,7 +16,7 @@ export default async function MenteeListPage() {
           ← 홈으로
         </Link>
         <h1 className="mt-2 text-xl font-semibold text-stone-900">
-          내 멘티 목록
+          멘티 목록
         </h1>
       </div>
 
@@ -28,8 +28,7 @@ export default async function MenteeListPage() {
 
       {!error && mentees?.length === 0 && (
         <p className="text-sm text-stone-500">
-          아직 배정된 멘티가 없습니다. Supabase 대시보드에서
-          weekday_registrations 테이블에 내 멘토 id로 배정 데이터를
+          등록된 멘티가 없습니다. Supabase 대시보드에서 mentees 테이블에
           추가해보세요.
         </p>
       )}

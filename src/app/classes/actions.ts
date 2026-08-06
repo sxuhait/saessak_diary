@@ -35,6 +35,16 @@ export async function createClass(
     return { error: "로그인이 필요합니다." };
   }
 
+  const { data: mentor } = await supabase
+    .from("mentors")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (mentor?.role !== "admin") {
+    return { error: "관리자만 수업을 추가할 수 있습니다." };
+  }
+
   const { name, dayOfWeek, teacherName, description, color } =
     parseClassForm(formData);
 
@@ -72,6 +82,16 @@ export async function updateClass(
 
   if (!user) {
     return { error: "로그인이 필요합니다." };
+  }
+
+  const { data: mentor } = await supabase
+    .from("mentors")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (mentor?.role !== "admin") {
+    return { error: "관리자만 수업을 수정할 수 있습니다." };
   }
 
   const { name, dayOfWeek, teacherName, description, color } =
@@ -112,6 +132,16 @@ export async function deleteClass(
 
   if (!user) {
     return { error: "로그인이 필요합니다." };
+  }
+
+  const { data: mentor } = await supabase
+    .from("mentors")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (mentor?.role !== "admin") {
+    return { error: "관리자만 수업을 삭제할 수 있습니다." };
   }
 
   const { error } = await supabase.from("classes").delete().eq("id", classId);

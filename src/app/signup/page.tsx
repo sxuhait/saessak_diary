@@ -74,6 +74,33 @@ export default function SignupPage() {
           <p className="text-xs text-stone-500">최소 6자 이상 입력해주세요.</p>
         </div>
 
+        <fieldset className="space-y-1">
+          <legend className="text-sm font-medium text-stone-700">역할</legend>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-700 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 has-[:checked]:text-emerald-700">
+              <input
+                type="radio"
+                name="role"
+                value="mentor"
+                defaultChecked
+                required
+                className="accent-emerald-600"
+              />
+              멘토
+            </label>
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-700 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 has-[:checked]:text-emerald-700">
+              <input
+                type="radio"
+                name="role"
+                value="volunteer"
+                required
+                className="accent-emerald-600"
+              />
+              봉사자
+            </label>
+          </div>
+        </fieldset>
+
         {state.error && <p className="text-sm text-red-600">{state.error}</p>}
 
         <button
