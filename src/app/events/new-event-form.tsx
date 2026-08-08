@@ -2,7 +2,9 @@
 
 import { useActionState } from "react";
 import { DatePicker } from "@/components/date-picker";
+import { labelClass, fieldClass, primaryButtonClass } from "@/components/ui/form";
 import { createEvent, type EventActionState, type EventType } from "./actions";
+import { ScheduleEditor } from "./schedule-editor";
 
 const initialState: EventActionState = {};
 
@@ -21,12 +23,12 @@ export function NewEventForm({ defaultDate }: { defaultDate: string }) {
   return (
     <form
       action={formAction}
-      className="mt-4 flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4"
+      className="mt-6 flex flex-col gap-4 rounded-2xl border border-stone-200 bg-stone-50 p-5"
     >
-      <h4 className="text-sm font-medium text-stone-700">새 행사 추가</h4>
+      <h4 className="text-base font-semibold text-stone-900">새 행사 추가</h4>
 
-      <div className="space-y-1">
-        <label htmlFor="title" className="text-sm font-medium text-stone-700">
+      <div>
+        <label htmlFor="title" className={labelClass}>
           제목
         </label>
         <input
@@ -34,22 +36,19 @@ export function NewEventForm({ defaultDate }: { defaultDate: string }) {
           name="title"
           type="text"
           required
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className={`${fieldClass} bg-white`}
         />
       </div>
 
-      <div className="space-y-1">
-        <label
-          htmlFor="event_type"
-          className="text-sm font-medium text-stone-700"
-        >
+      <div>
+        <label htmlFor="event_type" className={labelClass}>
           행사 종류
         </label>
         <select
           id="event_type"
           name="event_type"
           defaultValue="other"
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className={`${fieldClass} bg-white`}
         >
           {EVENT_TYPE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -60,71 +59,52 @@ export function NewEventForm({ defaultDate }: { defaultDate: string }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-stone-700">시작일</label>
+        <div>
+          <label className={labelClass}>시작일</label>
           <DatePicker name="start_date" defaultValue={defaultDate} />
         </div>
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-stone-700">종료일</label>
+        <div>
+          <label className={labelClass}>종료일</label>
           <DatePicker name="end_date" defaultValue={defaultDate} />
         </div>
       </div>
 
-      <div className="space-y-1">
-        <label
-          htmlFor="location"
-          className="text-sm font-medium text-stone-700"
-        >
+      <div>
+        <label htmlFor="location" className={labelClass}>
           장소 (선택)
         </label>
         <input
           id="location"
           name="location"
           type="text"
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className={`${fieldClass} bg-white`}
         />
       </div>
 
-      <div className="space-y-1">
-        <label
-          htmlFor="description"
-          className="text-sm font-medium text-stone-700"
-        >
+      <div>
+        <label htmlFor="description" className={labelClass}>
           설명 (선택)
         </label>
         <textarea
           id="description"
           name="description"
           rows={3}
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className={`${fieldClass} bg-white`}
         />
       </div>
 
-      <div className="space-y-1">
-        <label
-          htmlFor="schedule"
-          className="text-sm font-medium text-stone-700"
-        >
-          상세 일정 (선택)
-        </label>
-        <textarea
-          id="schedule"
-          name="schedule"
-          rows={4}
-          placeholder={"예: 1일차 09:00 출발 ...\n2일차 10:00 체험 활동 ..."}
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-        />
+      <div>
+        <p className={labelClass}>상세 일정 (선택)</p>
+        <ScheduleEditor name="schedule" />
       </div>
 
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-fit rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-      >
-        {pending ? "저장 중..." : "행사 추가"}
-      </button>
+      <div className="flex justify-end">
+        <button type="submit" disabled={pending} className={primaryButtonClass}>
+          {pending ? "저장 중..." : "행사 추가"}
+        </button>
+      </div>
     </form>
   );
 }

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { cardClassName } from "@/components/ui/card";
+import { labelClass, fieldClass, primaryButtonClass } from "@/components/ui/form";
 import { signup, type SignupState } from "./actions";
 
 const initialState: SignupState = {};
@@ -13,19 +15,19 @@ export default function SignupPage() {
     <div className="flex flex-1 items-center justify-center px-4">
       <form
         action={formAction}
-        className="w-full max-w-sm space-y-4 rounded-xl border border-stone-200 bg-white p-8"
+        className={`w-full max-w-sm space-y-5 ${cardClassName}`}
       >
         <div>
-          <h1 className="text-xl font-semibold text-stone-900">
+          <h1 className="text-2xl font-bold tracking-tight text-stone-900">
             멘토 회원가입
           </h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="mt-1.5 text-sm text-stone-500">
             새싹 다이어리와 함께 멘토링을 시작해보세요.
           </p>
         </div>
 
-        <div className="space-y-1">
-          <label htmlFor="name" className="text-sm font-medium text-stone-700">
+        <div>
+          <label htmlFor="name" className={labelClass}>
             이름
           </label>
           <input
@@ -34,15 +36,12 @@ export default function SignupPage() {
             type="text"
             required
             autoComplete="name"
-            className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            className={fieldClass}
           />
         </div>
 
-        <div className="space-y-1">
-          <label
-            htmlFor="email"
-            className="text-sm font-medium text-stone-700"
-          >
+        <div>
+          <label htmlFor="email" className={labelClass}>
             이메일
           </label>
           <input
@@ -51,15 +50,12 @@ export default function SignupPage() {
             type="email"
             required
             autoComplete="email"
-            className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            className={fieldClass}
           />
         </div>
 
-        <div className="space-y-1">
-          <label
-            htmlFor="password"
-            className="text-sm font-medium text-stone-700"
-          >
+        <div>
+          <label htmlFor="password" className={labelClass}>
             비밀번호
           </label>
           <input
@@ -69,15 +65,17 @@ export default function SignupPage() {
             required
             autoComplete="new-password"
             minLength={6}
-            className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            className={fieldClass}
           />
-          <p className="text-xs text-stone-500">최소 6자 이상 입력해주세요.</p>
+          <p className="mt-1.5 text-xs text-stone-500">
+            최소 6자 이상 입력해주세요.
+          </p>
         </div>
 
-        <fieldset className="space-y-1">
-          <legend className="text-sm font-medium text-stone-700">역할</legend>
+        <fieldset>
+          <legend className={labelClass}>역할</legend>
           <div className="grid grid-cols-2 gap-2">
-            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-700 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 has-[:checked]:text-emerald-700">
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-stone-300 px-3 py-3 text-sm text-stone-700 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 has-[:checked]:text-emerald-700">
               <input
                 type="radio"
                 name="role"
@@ -88,7 +86,7 @@ export default function SignupPage() {
               />
               멘토
             </label>
-            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-700 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 has-[:checked]:text-emerald-700">
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-stone-300 px-3 py-3 text-sm text-stone-700 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 has-[:checked]:text-emerald-700">
               <input
                 type="radio"
                 name="role"
@@ -103,11 +101,7 @@ export default function SignupPage() {
 
         {state.error && <p className="text-sm text-red-600">{state.error}</p>}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={pending} className={`w-full ${primaryButtonClass}`}>
           {pending ? "가입 중..." : "회원가입"}
         </button>
 

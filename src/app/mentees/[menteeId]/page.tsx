@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/ui/page-header";
+import { secondaryPillClass } from "@/components/ui/form";
 import { SessionLogForm } from "./session-log-form";
 import { LogCalendar } from "./log-calendar";
 import { SessionLogList } from "./session-log-list";
@@ -77,31 +79,21 @@ export default async function MenteeSessionLogPage({
     .eq("mentee_id", menteeId);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10">
-      <div>
-        <Link
-          href="/mentees"
-          className="text-sm text-stone-500 hover:text-emerald-700"
-        >
-          ← 멘티 목록으로
-        </Link>
-        <div className="mt-2 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-stone-900">
-              {mentee.name} 일지 작성
-            </h1>
-            <p className="mt-1 text-sm text-stone-500">
-              {[mentee.school, mentee.grade].filter(Boolean).join(" · ")}
-            </p>
-          </div>
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <PageHeader
+        backHref="/mentees"
+        backLabel="멘티 목록으로"
+        title={`${mentee.name} 일지 작성`}
+        description={[mentee.school, mentee.grade].filter(Boolean).join(" · ")}
+        action={
           <Link
             href={`/mentees/${mentee.id}/attendance`}
-            className="rounded-md border border-emerald-600 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+            className={secondaryPillClass}
           >
             출석 체크
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       <ClassEnrollments
         menteeId={mentee.id}
@@ -110,7 +102,7 @@ export default async function MenteeSessionLogPage({
       />
 
       {saved === "1" && (
-        <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           저장되었습니다.
         </p>
       )}
@@ -124,7 +116,7 @@ export default async function MenteeSessionLogPage({
       <LearningDiagnostics logs={logs ?? []} attendance={attendance ?? []} />
 
       <div className="flex w-full flex-col gap-3">
-        <h2 className="text-sm font-medium text-stone-500">지난 일지</h2>
+        <h2 className="text-lg font-semibold text-stone-900">지난 일지</h2>
 
         {logsError && (
           <p className="text-sm text-red-600">

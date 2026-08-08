@@ -5,6 +5,8 @@ import { DayPicker } from "react-day-picker";
 import { ko } from "react-day-picker/locale";
 import "react-day-picker/style.css";
 import { getHolidayName, isCenterClosed } from "@/lib/holidays";
+import { cardClassName } from "@/components/ui/card";
+import { labelClass, fieldClass, primaryButtonClass } from "@/components/ui/form";
 import {
   clearAttendance,
   setAttendance,
@@ -180,10 +182,7 @@ function DayPanel({
 
       {(selectedStatus === "late" || selectedStatus === "excused") && (
         <div className="mt-3 flex flex-col gap-2">
-          <label
-            htmlFor="attendance-reason"
-            className="text-sm font-medium text-stone-700"
-          >
+          <label htmlFor="attendance-reason" className={labelClass}>
             {selectedStatus === "late" ? "지각 사유" : "결석 사유"}
           </label>
           <textarea
@@ -196,16 +195,18 @@ function DayPanel({
                 ? "예: 버스를 놓침, 늦잠 등"
                 : "예: 병원 진료, 가족 행사 등"
             }
-            className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            className={fieldClass}
           />
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => handleSetStatus(selectedStatus, reasonDraft)}
-            className="w-fit rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-          >
-            {pending ? "저장 중..." : "사유 저장"}
-          </button>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => handleSetStatus(selectedStatus, reasonDraft)}
+              className={primaryButtonClass}
+            >
+              {pending ? "저장 중..." : "사유 저장"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -260,7 +261,7 @@ export function AttendanceCalendar({
   }
 
   return (
-    <div className="w-full rounded-xl border border-stone-200 bg-white p-4">
+    <div className={`w-full ${cardClassName}`}>
       <div className="flex justify-center">
         <DayPicker
           mode="single"

@@ -7,6 +7,7 @@ import "react-day-picker/style.css";
 import { DAY_LABELS } from "@/lib/weekday";
 import { getHolidayName, isCenterClosed } from "@/lib/holidays";
 import { CLASS_COLOR_DOT_CLASS, type ClassColor } from "@/lib/class-colors";
+import { cardClassName } from "@/components/ui/card";
 import { cancelClassOccurrence, uncancelClassOccurrence } from "./actions";
 
 type ClassItem = {
@@ -127,7 +128,7 @@ export function ClassCalendar({
   }
 
   return (
-    <div className="w-full rounded-xl border border-stone-200 bg-white p-4">
+    <div className={`w-full ${cardClassName}`}>
       <div className="flex justify-center">
         <DayPicker
           mode="single"

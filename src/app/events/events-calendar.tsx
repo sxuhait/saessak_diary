@@ -5,6 +5,7 @@ import Link from "next/link";
 import { DayPicker } from "react-day-picker";
 import { ko } from "react-day-picker/locale";
 import "react-day-picker/style.css";
+import { cardClassName } from "@/components/ui/card";
 import type { EventType } from "./actions";
 import { NewEventForm } from "./new-event-form";
 
@@ -16,7 +17,10 @@ type CenterEvent = {
   end_date: string;
   location: string | null;
   description: string | null;
+  photo_urls: string[];
 };
+
+const THUMBNAIL_PREVIEW_COUNT = 3;
 
 function toISODate(date: Date) {
   const year = date.getFullYear();
@@ -87,7 +91,7 @@ export function EventsCalendar({ events }: { events: CenterEvent[] }) {
   }, [selectedIso, events]);
 
   return (
-    <div className="w-full rounded-xl border border-stone-200 bg-white p-4">
+    <div className={`w-full ${cardClassName}`}>
       <div className="flex justify-center">
         <DayPicker
           mode="single"
@@ -154,6 +158,36 @@ export function EventsCalendar({ events }: { events: CenterEvent[] }) {
                         : `${dateFormatter.format(fromISODate(event.start_date))} ~ ${dateFormatter.format(fromISODate(event.end_date))}`}
                       {event.location ? ` · ${event.location}` : ""}
                     </p>
+                    {event.photo_urls.length > 0 && (
+                      <div className="mt-2 flex gap-1">
+                        {event.photo_urls
+                          .slice(0, THUMBNAIL_PREVIEW_COUNT)
+                          .map((url, index) => {
+                            const remaining =
+                              event.photo_urls.length - THUMBNAIL_PREVIEW_COUNT;
+                            const isLastVisible =
+                              index === THUMBNAIL_PREVIEW_COUNT - 1;
+                            return (
+                              <div
+                                key={url}
+                                className="relative h-10 w-10 overflow-hidden rounded-md border border-stone-200 bg-stone-100"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={url}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
+                                {isLastVisible && remaining > 0 && (
+                                  <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[10px] font-medium text-white">
+                                    +{remaining}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
                     {event.description && (
                       <p className="mt-2 whitespace-pre-wrap text-sm text-stone-700">
                         {event.description}

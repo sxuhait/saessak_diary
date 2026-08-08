@@ -2,8 +2,24 @@
 
 import { useActionState, useState } from "react";
 import { DatePicker } from "@/components/date-picker";
+import { cardClassName } from "@/components/ui/card";
+import {
+  labelClass,
+  fieldClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+  textActionClass,
+  textDangerActionClass,
+} from "@/components/ui/form";
 import type { EventType } from "../actions";
+import { ScheduleEditor } from "../schedule-editor";
 import { deleteEvent, updateEvent, type EventActionState } from "./actions";
+import { EventPhotoGallery } from "./event-photo-gallery";
+import {
+  isStructuredSchedule,
+  parseSchedule,
+  sortScheduleItems,
+} from "@/lib/event-schedule";
 
 type CenterEvent = {
   id: string;
@@ -14,6 +30,7 @@ type CenterEvent = {
   location: string | null;
   description: string | null;
   schedule: string | null;
+  photo_urls: string[];
 };
 
 const EVENT_TYPE_OPTIONS: { value: EventType; label: string }[] = [
@@ -52,12 +69,9 @@ function EditEventForm({
   const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
-    <form
-      action={formAction}
-      className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-6"
-    >
-      <div className="space-y-1">
-        <label htmlFor="title" className="text-sm font-medium text-stone-700">
+    <form action={formAction} className={`flex flex-col gap-4 ${cardClassName}`}>
+      <div>
+        <label htmlFor="title" className={labelClass}>
           제목
         </label>
         <input
@@ -66,22 +80,19 @@ function EditEventForm({
           type="text"
           required
           defaultValue={event.title}
-          className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className={fieldClass}
         />
       </div>
 
-      <div className="space-y-1">
-        <label
-          htmlFor="event_type"
-          className="text-sm font-medium text-stone-700"
-        >
+      <div>
+        <label htmlFor="event_type" className={labelClass}>
           행사 종류
         </label>
         <select
           id="event_type"
           name="event_type"
           defaultValue={event.event_type}
-          className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className={fieldClass}
         >
           {EVENT_TYPE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -92,21 +103,18 @@ function EditEventForm({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-stone-700">시작일</label>
+        <div>
+          <label className={labelClass}>시작일</label>
           <DatePicker name="start_date" defaultValue={event.start_date} />
         </div>
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-stone-700">종료일</label>
+        <div>
+          <label className={labelClass}>종료일</label>
           <DatePicker name="end_date" defaultValue={event.end_date} />
         </div>
       </div>
 
-      <div className="space-y-1">
-        <label
-          htmlFor="location"
-          className="text-sm font-medium text-stone-700"
-        >
+      <div>
+        <label htmlFor="location" className={labelClass}>
           장소 (선택)
         </label>
         <input
@@ -114,15 +122,12 @@ function EditEventForm({
           name="location"
           type="text"
           defaultValue={event.location ?? ""}
-          className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className={fieldClass}
         />
       </div>
 
-      <div className="space-y-1">
-        <label
-          htmlFor="description"
-          className="text-sm font-medium text-stone-700"
-        >
+      <div>
+        <label htmlFor="description" className={labelClass}>
           설명 (선택)
         </label>
         <textarea
@@ -130,42 +135,27 @@ function EditEventForm({
           name="description"
           rows={3}
           defaultValue={event.description ?? ""}
-          className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className={fieldClass}
         />
       </div>
 
-      <div className="space-y-1">
-        <label
-          htmlFor="schedule"
-          className="text-sm font-medium text-stone-700"
-        >
-          상세 일정 (선택)
-        </label>
-        <textarea
-          id="schedule"
-          name="schedule"
-          rows={5}
-          defaultValue={event.schedule ?? ""}
-          className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-        />
+      <div>
+        <p className={labelClass}>상세 일정 (선택)</p>
+        <ScheduleEditor name="schedule" defaultValue={event.schedule} />
       </div>
 
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-        >
-          {pending ? "저장 중..." : "저장"}
-        </button>
+      <div className="flex justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-50"
+          className={secondaryButtonClass}
         >
           취소
+        </button>
+        <button type="submit" disabled={pending} className={primaryButtonClass}>
+          {pending ? "저장 중..." : "저장"}
         </button>
       </div>
     </form>
@@ -185,12 +175,15 @@ export function EventDetail({ event }: { event: CenterEvent }) {
 
   if (isEditing) {
     return (
-      <EditEventForm event={event} onCancel={() => setIsEditing(false)} />
+      <div className="flex flex-col gap-6">
+        <EditEventForm event={event} onCancel={() => setIsEditing(false)} />
+        <EventPhotoGallery eventId={event.id} photoUrls={event.photo_urls} />
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white p-6">
+    <div className={`flex flex-col gap-4 ${cardClassName}`}>
       <div className="flex items-start justify-between gap-3">
         <h2 className="text-2xl font-semibold text-stone-900">
           {event.title}
@@ -227,17 +220,49 @@ export function EventDetail({ event }: { event: CenterEvent }) {
       {event.schedule && (
         <div>
           <h3 className="text-sm font-medium text-stone-500">상세 일정</h3>
-          <p className="mt-1 whitespace-pre-wrap rounded-md bg-stone-50 p-3 text-sm text-stone-700">
-            {event.schedule}
-          </p>
+          {isStructuredSchedule(event.schedule) ? (
+            <div className="mt-1 overflow-hidden rounded-xl border border-stone-200">
+              <table className="w-full text-sm">
+                <tbody>
+                  {sortScheduleItems(parseSchedule(event.schedule)).map(
+                    (item, index) => (
+                      <tr
+                        key={index}
+                        className="border-b border-stone-100 last:border-0 odd:bg-stone-50"
+                      >
+                        <td className="w-24 whitespace-nowrap px-3 py-2 align-top font-medium tabular-nums text-emerald-700">
+                          {item.time || "-"}
+                        </td>
+                        <td className="px-3 py-2 text-stone-700">
+                          {item.content}
+                        </td>
+                      </tr>
+                    ),
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="mt-1 whitespace-pre-wrap rounded-xl bg-stone-50 p-3 text-sm text-stone-700">
+              {event.schedule}
+            </p>
+          )}
         </div>
       )}
 
-      <div className="flex gap-2 border-t border-stone-200 pt-4">
+      <div className="border-t border-stone-100 pt-4">
+        <EventPhotoGallery
+          eventId={event.id}
+          photoUrls={event.photo_urls}
+          variant="inline"
+        />
+      </div>
+
+      <div className="flex gap-4 border-t border-stone-100 pt-4">
         <button
           type="button"
           onClick={() => setIsEditing(true)}
-          className="rounded-md border border-emerald-600 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+          className={textActionClass}
         >
           수정
         </button>
@@ -245,7 +270,7 @@ export function EventDetail({ event }: { event: CenterEvent }) {
           type="button"
           onClick={handleDelete}
           disabled={deleting}
-          className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+          className={textDangerActionClass}
         >
           {deleting ? "삭제 중..." : "삭제"}
         </button>

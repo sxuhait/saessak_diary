@@ -4,6 +4,7 @@ import {
   type DiagnosticSeverity,
   type SessionLogInput,
 } from "@/lib/learning-diagnostics";
+import { cardClassName } from "@/components/ui/card";
 
 const SEVERITY_STYLES: Record<
   DiagnosticSeverity,
@@ -36,8 +37,8 @@ export function LearningDiagnostics({
   const findings = diagnoseLearning({ logs, attendance });
 
   return (
-    <div className="w-full rounded-xl border border-stone-200 bg-white p-4">
-      <h2 className="text-sm font-medium text-stone-500">학습 진단</h2>
+    <div className={`w-full ${cardClassName}`}>
+      <h2 className="text-base font-semibold text-stone-900">학습 진단</h2>
 
       <div className="mt-3 flex flex-col gap-2">
         {findings.map((finding) => {

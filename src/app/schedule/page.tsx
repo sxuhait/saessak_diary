@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
+import { cardClassName } from "@/components/ui/card";
 
 // Static for now -- there's no `center_schedule` table yet, this is just the
 // standard weekly template hardcoded until an edit UI exists (see Roadmap).
@@ -36,18 +37,15 @@ const SCHEDULE_ROWS: ScheduleRow[] = [
 
 export default function SchedulePage() {
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10">
-      <div>
-        <Link href="/" className="text-sm text-stone-500 hover:text-emerald-700">
-          ← 홈으로
-        </Link>
-        <h1 className="mt-2 text-xl font-semibold text-stone-900">
-          센터 주간 시간표
-        </h1>
-        <p className="mt-1 text-sm text-stone-500">운영시간 09:00~20:00 (월~금)</p>
-      </div>
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <PageHeader
+        backHref="/"
+        backLabel="홈으로"
+        title="센터 주간 시간표"
+        description="운영시간 09:00~20:00 (월~금)"
+      />
 
-      <div className="w-full overflow-x-auto rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+      <div className={`w-full overflow-x-auto ${cardClassName}`}>
         <table className="w-full min-w-[640px] border-separate border-spacing-1 text-sm">
           <thead>
             <tr>

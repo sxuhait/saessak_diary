@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { DayPicker } from "react-day-picker";
 import { ko } from "react-day-picker/locale";
 import "react-day-picker/style.css";
+import { cardClassName } from "@/components/ui/card";
 
 type LogSummary = {
   id: string;
@@ -46,7 +47,10 @@ export function LogCalendar({ logs }: { logs: LogSummary[] }) {
   }, [selected, logs]);
 
   return (
-    <div className="w-full rounded-xl border border-stone-200 bg-white p-4">
+    <div className={`w-full ${cardClassName}`}>
+      <h2 className="mb-4 text-base font-semibold text-stone-900">
+        일지 달력
+      </h2>
       <div className="flex justify-center">
         <DayPicker
           mode="single"

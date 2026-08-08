@@ -46,7 +46,9 @@ export default async function HomePage() {
 
   const { data: events, error: eventsError } = await supabase
     .from("center_events")
-    .select("id, title, event_type, start_date, end_date, location, description")
+    .select(
+      "id, title, event_type, start_date, end_date, location, description, photo_urls",
+    )
     .order("start_date");
 
   const today = new Date();
@@ -63,29 +65,27 @@ export default async function HomePage() {
       : "오늘도 새싹들과 함께 자라나요";
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10">
-      <div className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-white px-5 py-6 shadow-sm">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <div className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-white px-6 py-6 shadow-sm sm:px-8">
         <Leaf
-          className="pointer-events-none absolute -top-5 -right-5 h-28 w-28 rotate-12 text-emerald-100"
+          className="pointer-events-none absolute -top-6 -right-6 h-32 w-32 rotate-12 text-emerald-100"
           strokeWidth={1.5}
           aria-hidden
         />
         <Sprout
-          className="pointer-events-none absolute -bottom-4 left-1/2 h-20 w-20 -translate-x-1/2 text-emerald-50"
+          className="pointer-events-none absolute -right-2 -bottom-8 h-24 w-24 text-emerald-50"
           strokeWidth={1.5}
           aria-hidden
         />
 
-        <div className="relative flex items-center gap-2.5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
-            <Sprout className="h-5 w-5" strokeWidth={2.5} aria-hidden />
-          </span>
-          <h1 className="text-2xl font-bold tracking-tight text-emerald-700">
+        <div className="relative flex flex-wrap items-center gap-3">
+          <span className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm ring-1 ring-emerald-100">
+            <Sprout className="h-4 w-4" strokeWidth={2.5} aria-hidden />
             새싹일기
-          </h1>
+          </span>
+          <span className="hidden h-5 w-px bg-emerald-200 sm:block" aria-hidden />
+          <p className="text-sm text-stone-700 sm:text-base">{greeting} 🌱</p>
         </div>
-
-        <p className="relative mt-2 text-sm text-stone-600">{greeting} 🌱</p>
       </div>
 
       {eventsError && (
@@ -94,49 +94,56 @@ export default async function HomePage() {
         </p>
       )}
 
-      <EventsCalendar events={events ?? []} />
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-          <p className="text-xs text-stone-500">오늘</p>
-          <p className="mt-1 text-sm font-medium text-stone-900">
-            {dateFormatter.format(today)}
-          </p>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <EventsCalendar events={events ?? []} />
         </div>
 
-        <Link
-          href="/mentees"
-          className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm hover:border-emerald-300 hover:bg-emerald-50"
-        >
-          <p className="text-xs text-stone-500">전체 멘티</p>
-          <p className="mt-1 text-2xl font-semibold text-emerald-700">
-            {menteeCount ?? 0}명
-          </p>
-        </Link>
+        <div className="flex flex-col gap-4 lg:col-span-1">
+          <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
+            <p className="text-xs text-stone-500">오늘</p>
+            <p className="mt-2 text-lg font-semibold text-stone-900">
+              {dateFormatter.format(today)}
+            </p>
+          </div>
 
-        <Link
-          href="/events"
-          className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm hover:border-emerald-300 hover:bg-emerald-50"
-        >
-          <p className="text-xs text-stone-500">이번 주 센터 행사</p>
-          <p className="mt-1 text-2xl font-semibold text-emerald-700">
-            {weekEvents.length}건
-          </p>
-          {weekEvents.length > 0 && (
-            <ul className="mt-2 flex flex-col gap-0.5">
-              {weekEvents.slice(0, 2).map((event) => (
-                <li key={event.id} className="truncate text-xs text-stone-500">
-                  {event.title}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Link>
+          <Link
+            href="/mentees"
+            className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm hover:border-emerald-300 hover:bg-emerald-50"
+          >
+            <p className="text-xs text-stone-500">전체 멘티</p>
+            <p className="mt-2 text-3xl font-bold text-emerald-700">
+              {menteeCount ?? 0}명
+            </p>
+          </Link>
+
+          <Link
+            href="/events"
+            className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm hover:border-emerald-300 hover:bg-emerald-50"
+          >
+            <p className="text-xs text-stone-500">이번 주 센터 행사</p>
+            <p className="mt-2 text-3xl font-bold text-emerald-700">
+              {weekEvents.length}건
+            </p>
+            {weekEvents.length > 0 && (
+              <ul className="mt-2 flex flex-col gap-0.5">
+                {weekEvents.slice(0, 2).map((event) => (
+                  <li
+                    key={event.id}
+                    className="truncate text-xs text-stone-500"
+                  >
+                    {event.title}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Link>
+        </div>
       </div>
 
       <Link
         href="/schedule"
-        className="flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 shadow-sm hover:border-emerald-300 hover:bg-emerald-50"
+        className="flex items-center justify-between rounded-3xl border border-emerald-100 bg-emerald-50/60 p-4 shadow-sm hover:border-emerald-300 hover:bg-emerald-50"
       >
         <span className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-emerald-600" aria-hidden />

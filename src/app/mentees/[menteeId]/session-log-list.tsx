@@ -3,6 +3,14 @@
 import { useState } from "react";
 import { DatePicker } from "@/components/date-picker";
 import { COMMON_SUBJECTS } from "@/lib/subjects";
+import {
+  labelClass,
+  fieldClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+  textActionClass,
+  textDangerActionClass,
+} from "@/components/ui/form";
 import { deleteSessionLog, updateSessionLog } from "./actions";
 
 type SessionLog = {
@@ -54,20 +62,15 @@ function EditLogForm({
   return (
     <form
       action={handleSubmit}
-      className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50/40 p-4"
+      className="flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5"
     >
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-stone-700">
-          수업 날짜
-        </label>
+      <div>
+        <label className={labelClass}>수업 날짜</label>
         <DatePicker name="session_date" defaultValue={log.session_date} />
       </div>
 
-      <div className="space-y-1">
-        <label
-          htmlFor={`subject-${log.id}`}
-          className="text-sm font-medium text-stone-700"
-        >
+      <div>
+        <label htmlFor={`subject-${log.id}`} className={labelClass}>
           과목 (선택)
         </label>
         <input
@@ -76,7 +79,7 @@ function EditLogForm({
           type="text"
           list={`subject-options-${log.id}`}
           defaultValue={log.subject ?? ""}
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className={fieldClass}
         />
         <datalist id={`subject-options-${log.id}`}>
           {COMMON_SUBJECTS.map((subject) => (
@@ -85,11 +88,8 @@ function EditLogForm({
         </datalist>
       </div>
 
-      <div className="space-y-1">
-        <label
-          htmlFor={`progress-${log.id}`}
-          className="text-sm font-medium text-stone-700"
-        >
+      <div>
+        <label htmlFor={`progress-${log.id}`} className={labelClass}>
           진도 (선택)
         </label>
         <input
@@ -98,15 +98,12 @@ function EditLogForm({
           type="text"
           defaultValue={log.progress ?? ""}
           placeholder="예: 문제집 45~52p, 3단원"
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className={fieldClass}
         />
       </div>
 
-      <div className="space-y-1">
-        <label
-          htmlFor={`content-${log.id}`}
-          className="text-sm font-medium text-stone-700"
-        >
+      <div>
+        <label htmlFor={`content-${log.id}`} className={labelClass}>
           일지 내용
         </label>
         <textarea
@@ -115,26 +112,22 @@ function EditLogForm({
           required
           rows={5}
           defaultValue={log.content}
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className={fieldClass}
         />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-fit rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-        >
-          {pending ? "저장 중..." : "저장"}
-        </button>
+      <div className="flex justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="w-fit rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-50"
+          className={secondaryButtonClass}
         >
           취소
+        </button>
+        <button type="submit" disabled={pending} className={primaryButtonClass}>
+          {pending ? "저장 중..." : "저장"}
         </button>
       </div>
     </form>
@@ -180,7 +173,7 @@ export function SessionLogList({ logs }: { logs: SessionLog[] }) {
         ) : (
           <li
             key={log.id}
-            className="rounded-lg border border-stone-200 bg-white p-4"
+            className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-medium text-stone-900">
@@ -206,11 +199,11 @@ export function SessionLogList({ logs }: { logs: SessionLog[] }) {
               {log.content}
             </p>
 
-            <div className="mt-3 flex items-center gap-2 border-t border-stone-100 pt-3">
+            <div className="mt-3 flex items-center gap-4 border-t border-stone-100 pt-3">
               <button
                 type="button"
                 onClick={() => setEditingId(log.id)}
-                className="rounded-md border border-emerald-600 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+                className={textActionClass}
               >
                 수정
               </button>
@@ -218,7 +211,7 @@ export function SessionLogList({ logs }: { logs: SessionLog[] }) {
                 type="button"
                 onClick={() => handleDelete(log)}
                 disabled={deletingId === log.id}
-                className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                className={textDangerActionClass}
               >
                 {deletingId === log.id ? "삭제 중..." : "삭제"}
               </button>

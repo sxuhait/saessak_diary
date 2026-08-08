@@ -4,6 +4,9 @@ import {
   diagnoseLearning,
   type DiagnosticSeverity,
 } from "@/lib/learning-diagnostics";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { secondaryButtonClass } from "@/components/ui/form";
 import { logout } from "../actions";
 import { ProfileName } from "./profile-name";
 
@@ -116,10 +119,15 @@ export default async function ProfilePage() {
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10">
-      <h1 className="text-xl font-semibold text-stone-900">내 정보</h1>
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <PageHeader
+        backHref="/"
+        backLabel="홈으로"
+        title="내 정보"
+        description="내 프로필과 활동 현황을 확인하세요."
+      />
 
-      <div className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white p-6">
+      <Card className="flex flex-col gap-4">
         <ProfileName name={mentor?.name ?? ""} />
         <div>
           <p className="text-xs text-stone-500">이메일</p>
@@ -127,10 +135,10 @@ export default async function ProfilePage() {
             {user?.email ?? "-"}
           </p>
         </div>
-      </div>
+      </Card>
 
-      <div className="rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-sm font-medium text-stone-500">전체 멘티</h2>
+      <Card>
+        <h2 className="text-base font-semibold text-stone-900">전체 멘티</h2>
         <p className="mt-1 text-2xl font-semibold text-emerald-700">
           {mentees?.length ?? 0}명
         </p>
@@ -153,13 +161,13 @@ export default async function ProfilePage() {
             등록된 멘티가 없습니다.
           </p>
         )}
-      </div>
+      </Card>
 
-      <div className="rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-sm font-medium text-stone-500">챙길 거 알림</h2>
+      <Card>
+        <h2 className="text-base font-semibold text-stone-900">챙길 거 알림</h2>
 
         {alerts.length === 0 ? (
-          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+          <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
             <p className="text-sm font-medium text-emerald-700">
               챙길 특이사항이 없습니다
             </p>
@@ -172,7 +180,7 @@ export default async function ProfilePage() {
                 <Link
                   key={`${mentee.id}-${finding.id}`}
                   href={`/mentees/${mentee.id}`}
-                  className={`block rounded-lg border p-3 hover:opacity-90 ${style.card}`}
+                  className={`block rounded-xl border p-3 hover:opacity-90 ${style.card}`}
                 >
                   <div className="flex items-center gap-2">
                     <span
@@ -189,10 +197,10 @@ export default async function ProfilePage() {
             })}
           </div>
         )}
-      </div>
+      </Card>
 
-      <div className="rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-sm font-medium text-stone-500">최근 내 활동</h2>
+      <Card>
+        <h2 className="text-base font-semibold text-stone-900">최근 내 활동</h2>
 
         {recentLogs && recentLogs.length > 0 ? (
           <ul className="mt-3 flex flex-col divide-y divide-stone-100">
@@ -219,13 +227,10 @@ export default async function ProfilePage() {
             아직 작성한 일지가 없습니다.
           </p>
         )}
-      </div>
+      </Card>
 
       <form action={logout}>
-        <button
-          type="submit"
-          className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
-        >
+        <button type="submit" className={`w-full ${secondaryButtonClass}`}>
           로그아웃
         </button>
       </form>

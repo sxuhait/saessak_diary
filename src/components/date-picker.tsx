@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { DayPicker } from "react-day-picker";
 import { ko } from "react-day-picker/locale";
 import "react-day-picker/style.css";
+import { fieldClass } from "@/components/ui/form";
 
 function toISODate(date: Date) {
   const year = date.getFullYear();
@@ -58,13 +59,13 @@ export function DatePicker({
       <button
         type="button"
         onClick={() => setOpen((isOpen) => !isOpen)}
-        className="w-full rounded-md border border-stone-300 px-3 py-2 text-left text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+        className={`${fieldClass} text-left`}
       >
         {displayFormatter.format(selectedDate)}
       </button>
 
       {open && (
-        <div className="absolute z-10 mt-2 rounded-lg border border-stone-200 bg-white p-2 shadow-lg">
+        <div className="absolute z-10 mt-2 rounded-2xl border border-stone-200 bg-white p-2 shadow-lg">
           <DayPicker
             mode="single"
             locale={ko}

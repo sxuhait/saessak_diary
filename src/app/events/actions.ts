@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Enums } from "@/lib/database.types";
+import { parseScheduleFormInput, serializeSchedule } from "@/lib/event-schedule";
 
 export type EventType = Enums<"center_event_type">;
 
@@ -28,7 +29,9 @@ export async function createEvent(
   const endDate = String(formData.get("end_date") ?? "") || startDate;
   const location = String(formData.get("location") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
-  const schedule = String(formData.get("schedule") ?? "").trim();
+  const schedule = serializeSchedule(
+    parseScheduleFormInput(String(formData.get("schedule") ?? "")),
+  );
 
   if (!title || !startDate) {
     return { error: "제목과 시작일을 입력해주세요." };
@@ -45,7 +48,7 @@ export async function createEvent(
     end_date: endDate,
     location: location || null,
     description: description || null,
-    schedule: schedule || null,
+    schedule,
     created_by: user.id,
   });
 

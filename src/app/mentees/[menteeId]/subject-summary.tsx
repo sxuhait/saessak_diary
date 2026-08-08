@@ -1,3 +1,5 @@
+import { cardClassName } from "@/components/ui/card";
+
 type SessionLog = {
   session_date: string;
   subject: string | null;
@@ -53,8 +55,8 @@ export function SubjectSummary({ logs }: { logs: SessionLog[] }) {
   rows.sort((a, b) => a.daysAgo - b.daysAgo);
 
   return (
-    <div className="w-full rounded-xl border border-stone-200 bg-white p-4">
-      <h2 className="text-sm font-medium text-stone-500">과목별 학습 현황</h2>
+    <div className={`w-full ${cardClassName}`}>
+      <h2 className="text-base font-semibold text-stone-900">과목별 학습 현황</h2>
 
       {rows.length === 0 ? (
         <p className="mt-2 text-sm text-stone-500">

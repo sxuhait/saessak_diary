@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { DAY_LABELS } from "@/lib/weekday";
+import { cardClassName } from "@/components/ui/card";
+import { fieldClass, primaryPillClass } from "@/components/ui/form";
 import { enrollClass, unenrollClass } from "./actions";
 
 type EnrolledClass = {
@@ -62,8 +64,8 @@ export function ClassEnrollments({
   }
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-4">
-      <h2 className="text-sm font-medium text-stone-500">수강 중인 수업</h2>
+    <div className={cardClassName}>
+      <h2 className="text-base font-semibold text-stone-900">수강 중인 수업</h2>
 
       {enrolled.length === 0 ? (
         <p className="mt-2 text-sm text-stone-500">등록된 수업이 없습니다.</p>
@@ -97,7 +99,7 @@ export function ClassEnrollments({
           <select
             value={selectedClassId}
             onChange={(e) => setSelectedClassId(e.target.value)}
-            className="flex-1 rounded-md border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            className={`flex-1 ${fieldClass}`}
           >
             <option value="">수업 선택...</option>
             {availableClasses.map((item) => (
@@ -110,7 +112,7 @@ export function ClassEnrollments({
             type="button"
             onClick={handleEnroll}
             disabled={!selectedClassId || enrolling}
-            className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            className={`${primaryPillClass} disabled:cursor-not-allowed disabled:opacity-50`}
           >
             {enrolling ? "등록 중..." : "등록"}
           </button>

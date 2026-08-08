@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { suggestNextColor } from "@/lib/class-colors";
+import { PageHeader } from "@/components/ui/page-header";
 import { ClassList } from "./class-list";
 import { NewClassForm } from "./new-class-form";
 import { ClassCalendar } from "./class-calendar";
@@ -31,19 +31,13 @@ export default async function ClassesPage() {
     .select("id, class_id, cancelled_date");
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10">
-      <div>
-        <Link href="/" className="text-sm text-stone-500 hover:text-emerald-700">
-          ← 홈으로
-        </Link>
-        <h1 className="mt-2 text-xl font-semibold text-stone-900">
-          센터 수업 관리
-        </h1>
-        <p className="mt-1 text-sm text-stone-500">
-          외부 선생님이 진행하는 요일별 수업을 관리합니다. 모든 멘토가 함께
-          봅니다.
-        </p>
-      </div>
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <PageHeader
+        backHref="/"
+        backLabel="홈으로"
+        title="센터 수업 관리"
+        description="외부 선생님이 진행하는 요일별 수업을 관리합니다. 모든 멘토가 함께 봅니다."
+      />
 
       {error && (
         <p className="text-sm text-red-600">
@@ -59,7 +53,7 @@ export default async function ClassesPage() {
       {isAdmin ? (
         <NewClassForm defaultColor={suggestNextColor(classes?.length ?? 0)} />
       ) : (
-        <p className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-500">
+        <p className="rounded-2xl border border-stone-200 bg-white px-5 py-4 text-sm text-stone-500 shadow-sm">
           새 수업 추가·수정·삭제는 관리자만 할 수 있습니다.
         </p>
       )}

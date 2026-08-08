@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
 
 export default async function MenteeListPage() {
   const supabase = await createClient();
@@ -10,15 +12,8 @@ export default async function MenteeListPage() {
     .order("name");
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-10">
-      <div>
-        <Link href="/" className="text-sm text-stone-500 hover:text-emerald-700">
-          ← 홈으로
-        </Link>
-        <h1 className="mt-2 text-xl font-semibold text-stone-900">
-          멘티 목록
-        </h1>
-      </div>
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <PageHeader backHref="/" backLabel="홈으로" title="멘티 목록" />
 
       {error && (
         <p className="text-sm text-red-600">
@@ -27,29 +22,35 @@ export default async function MenteeListPage() {
       )}
 
       {!error && mentees?.length === 0 && (
-        <p className="text-sm text-stone-500">
-          등록된 멘티가 없습니다. Supabase 대시보드에서 mentees 테이블에
-          추가해보세요.
-        </p>
+        <Card>
+          <p className="text-sm text-stone-500">
+            등록된 멘티가 없습니다. Supabase 대시보드에서 mentees 테이블에
+            추가해보세요.
+          </p>
+        </Card>
       )}
 
-      <ul className="flex flex-col divide-y divide-stone-200 rounded-lg border border-stone-200">
-        {mentees?.map((mentee) => (
-          <li key={mentee.id}>
-            <Link
-              href={`/mentees/${mentee.id}`}
-              className="flex items-center justify-between px-4 py-3 hover:bg-emerald-50"
-            >
-              <span className="font-medium text-stone-900">
-                {mentee.name}
-              </span>
-              <span className="text-sm text-stone-500">
-                {[mentee.school, mentee.grade].filter(Boolean).join(" · ")}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {mentees && mentees.length > 0 && (
+        <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
+          <ul className="flex flex-col divide-y divide-stone-100">
+            {mentees.map((mentee) => (
+              <li key={mentee.id}>
+                <Link
+                  href={`/mentees/${mentee.id}`}
+                  className="flex items-center justify-between gap-3 px-6 py-4 hover:bg-emerald-50"
+                >
+                  <span className="font-medium text-stone-900">
+                    {mentee.name}
+                  </span>
+                  <span className="text-sm text-stone-500">
+                    {[mentee.school, mentee.grade].filter(Boolean).join(" · ")}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
