@@ -268,6 +268,41 @@ export type Database = {
         }
         Relationships: []
       }
+      mentor_schedules: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          mentor_id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          mentor_id: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          mentor_id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_schedules_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentors: {
         Row: {
           created_at: string
@@ -350,6 +385,35 @@ export type Database = {
           {
             foreignKeyName: "session_logs_mentor_id_fkey"
             columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      volunteer_attendance: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          id: string
+          volunteer_id: string
+        }
+        Insert: {
+          attendance_date: string
+          created_at?: string
+          id?: string
+          volunteer_id: string
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          id?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_attendance_volunteer_id_fkey"
+            columns: ["volunteer_id"]
             isOneToOne: false
             referencedRelation: "mentors"
             referencedColumns: ["id"]

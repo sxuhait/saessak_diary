@@ -28,6 +28,11 @@ const NAV_ITEMS: {
     isActive: (pathname) => pathname.startsWith("/events"),
   },
   {
+    href: "/today",
+    label: "오늘",
+    isActive: (pathname) => pathname.startsWith("/today"),
+  },
+  {
     href: "/profile",
     label: "내 정보",
     isActive: (pathname) => pathname.startsWith("/profile"),

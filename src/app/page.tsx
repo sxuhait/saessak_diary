@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, Leaf, Sprout } from "lucide-react";
+import { Clock, Leaf, Sprout, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { EventsCalendar } from "./events/events-calendar";
 
@@ -140,6 +140,19 @@ export default async function HomePage() {
           </Link>
         </div>
       </div>
+
+      <Link
+        href="/today"
+        className="flex items-center justify-between rounded-3xl border border-emerald-100 bg-emerald-50/60 p-4 shadow-sm hover:border-emerald-300 hover:bg-emerald-50"
+      >
+        <span className="flex items-center gap-2">
+          <Users className="h-5 w-5 text-emerald-600" aria-hidden />
+          <span className="text-sm font-medium text-stone-900">
+            오늘 누가 오나요
+          </span>
+        </span>
+        <span className="text-sm text-emerald-700">보기 →</span>
+      </Link>
 
       <Link
         href="/schedule"

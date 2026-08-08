@@ -8,11 +8,11 @@
 
 **saessak_diary**(새싹 다이어리)는 지역아동센터 멘토를 위한 멘토링 코파일럿 웹 앱입니다. "새싹"은 프로젝트 이름일 뿐이며, 아이들이 자라나는 것을 비유한 것이지 실제로 식물을 다루는 앱은 아닙니다.
 
-- 멘토는 로그인해서 자신에게 배정된 멘티를 보고, 수업 일지를 쓰고, 멘티별 출석을 확인합니다.
-- 센터는 또한 견학, 1박 캠프 같은 공용 행사를 운영하는데, 멘토-멘티 배정과 무관하게 모든 멘토가 하나의 공통 달력에서 볼 수 있습니다.
-- 추후 AI가 누적된 수업 일지를 분석해 아이별 학습 취약점을 드러내고 다음 수업에서 집중할 부분을 제안할 예정입니다 — **아직 구현되지 않음** (로드맵 참고).
+- 멘토(멘토/봉사자/관리자 역할 구분)는 로그인해서 센터 전체가 공유하는 멘티 명단을 보고, 수업 일지를 쓰고, 출석을 확인합니다. 담당제가 없어서 누구나 아무 멘티나 기록할 수 있습니다 (아래 "공용 멘티 명단과 역할 기반 권한" 참고).
+- 센터는 또한 견학, 1박 캠프 같은 공용 행사를 운영하는데, 멘토-멘티 배정과 무관하게 모든 멘토가 하나의 공통 달력에서 볼 수 있습니다. 행사에는 시간대별 일정과 사진 갤러리를 붙일 수 있습니다.
+- `session_logs`/`attendance`를 규칙 기반(날짜 차이·횟수·비율 계산, 외부 API 없음)으로 분석해 방치된 과목·결석 패턴·과목 편중을 감지하는 학습 진단이 있습니다 (`src/lib/learning-diagnostics.ts`). 이 규칙들 위에 자연어로 설명을 붙이는 AI 분석은 아직 준비 중입니다 — **아직 구현되지 않음** (로드맵 참고).
 
-1단계(로그인 → 멘티 목록 → 수업 일지 작성 폼 → Supabase 저장)와 그 이후 진행된 출석/행사 달력 작업은 완료되었습니다. 남은 작업은 로드맵 항목에 정리되어 있습니다.
+로그인 → 멘티 목록 → 수업 일지 작성 → 출석 체크 → 센터 행사/수업/시간표 → 오늘 출근·참석 현황(`/today`) → 계정 역할·만료 → 마이페이지·알림까지 한 바퀴 도는 기능은 완료되었습니다. 남은 작업은 로드맵 항목에 정리되어 있습니다. Vercel에 배포되어 운영 중입니다.
 
 ## ⚠️ Next.js 버전 주의사항
 
@@ -48,6 +48,21 @@ npx supabase gen types typescript --linked > src/lib/database.types.ts
 
 `src/lib/database.types.ts`는 `src/lib/supabase/client.ts`와 `server.ts` 양쪽의 `createClient<Database>(...)`에 연결되어 있습니다 — 스키마가 바뀔 때마다 다시 생성하고, `npx tsc --noEmit`으로 업데이트가 필요한 호출부를 찾아내세요.
 
+**`supabase link`/`db push`가 이 프로젝트의 새 API 키 체계(publishable/secret key)와 충돌해서 실패하는 CLI 버그가 있었습니다.** `npx supabase login`으로 대화형 로그인하는 대신, Supabase 대시보드 Account → Access Tokens에서 발급한 개인 액세스 토큰을 `SUPABASE_ACCESS_TOKEN` 환경 변수로 넘겨서 우회하세요:
+
+```bash
+export SUPABASE_ACCESS_TOKEN=<발급받은 토큰>   # PowerShell: $env:SUPABASE_ACCESS_TOKEN = "<토큰>"
+npx supabase link --project-ref <project-ref>
+npx supabase db push --linked
+```
+
+그래도 안 되면 마이그레이션 SQL을 Supabase 대시보드 SQL Editor에 직접 붙여넣어 실행하세요(실제로 `20260808070422_add_event_photos_storage.sql`을 이렇게 반영한 적이 있습니다). 이 경우 원격의 마이그레이션 이력 테이블에는 기록이 안 남으므로, 다음에 `db push`를 돌리면 CLI가 그 마이그레이션을 다시 실행하려고 시도합니다 — `migration repair`로 이력만 "적용됨"으로 표시해서 맞춰주세요:
+
+```bash
+npx supabase migration list --linked                        # 로컬에는 있는데 원격 이력엔 없는 버전 확인
+npx supabase migration repair --status applied <version>    # 예: 20260808070422
+```
+
 로컬 Supabase 스택(`npx supabase start`)은 Docker Desktop이 필요한데, 이 개발 환경에서는 사용할 수 없었습니다 — 그래서 지금까지의 모든 스키마 작업은 로컬 shadow DB 대신 연결된 호스팅 프로젝트에 바로 반영되었습니다.
 
 앱을 실행하기 전에 `.env.example`을 `.env.local`로 복사하고, Supabase 프로젝트 설정(Settings → API)에서 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` 값을 채워 넣으세요.
@@ -55,7 +70,7 @@ npx supabase gen types typescript --linked > src/lib/database.types.ts
 ## 아키텍처
 
 - Next.js App Router, TypeScript, Tailwind v4, `src/` 레이아웃. 경로 별칭 `@/*` → `./src/*`.
-- Supabase(Postgres + Auth)가 백엔드 전체입니다 — 별도 API 서버는 없습니다. 데이터 접근은 커스텀 REST/GraphQL 레이어가 아니라 Supabase 클라이언트 헬퍼를 통해 이루어집니다.
+- Supabase(Postgres + Auth + Storage)가 백엔드 전체입니다 — 별도 API 서버는 없습니다. 데이터 접근은 커스텀 REST/GraphQL 레이어가 아니라 Supabase 클라이언트 헬퍼를 통해 이루어집니다.
 - 인증 세션 갱신은 `src/proxy.ts`에서 이루어지며(`src/lib/supabase/proxy.ts`의 `updateSession`을 통해), 경로가 `/login`이나 `/auth` 하위가 아니면 인증되지 않은 요청을 `/login`으로 리다이렉트하는 역할도 합니다. 새로운 공개 경로는 `src/lib/supabase/proxy.ts`의 `PUBLIC_PATHS`에 추가하세요.
 - Supabase 클라이언트 진입점은 세 가지이며, 각각 실행 컨텍스트가 다릅니다 — 코드가 실행되는 위치에 맞는 것을 항상 사용하세요:
   - `src/lib/supabase/client.ts` — 브라우저/클라이언트 컴포넌트용 (`createBrowserClient`).
@@ -68,15 +83,30 @@ npx supabase gen types typescript --linked > src/lib/database.types.ts
 
 | 라우트 | 설명 |
 | --- | --- |
-| `/login` | 이메일/비밀번호 로그인 (Supabase Auth), `/auth/*` 외에 유일한 공개 라우트 |
-| `/` | 홈 대시보드: 오늘 날짜, 전체 멘티 수, 이번 주 센터 행사 건수, `/mentees`와 `/events`로 가는 링크 |
+| `/login` | 이메일/비밀번호 로그인 (Supabase Auth). `?notice=check-email`(가입 직후 이메일 인증 안내), `?notice=expired`(봉사자 만료로 강제 로그아웃됨) 쿼리로 안내 문구를 띄움 |
+| `/signup` | 이메일 회원가입. 이름/이메일/비밀번호(6자 이상) + 역할(멘토/봉사자 중 선택, 관리자는 선택 불가) 입력 → `handle_new_mentor` 트리거가 `mentors` 행을 자동 생성. `/login`, `/signup`, `/auth/*`가 유일한 공개 라우트(`PUBLIC_PATHS`) |
+| `/` | 홈 대시보드: 오늘 날짜, 전체 멘티 수, 이번 주 센터 행사 건수(+미리보기), 주간 시간표 바로가기 링크. 로그인 상태면 상단 네비게이션(`TopNav`)이 항상 함께 렌더링됨 |
 | `/mentees` | 센터 전체 멘티 명단(공용, 담당 배정 없음 — RLS는 로그인 + 만료되지 않은 계정인지만 확인, 쿼리에 별도 join 불필요) |
-| `/mentees/[menteeId]` | 수업 일지 작성 폼(날짜, 과목, 진도, 내용) + 해당 멘티 일지의 월간 달력(일지가 있는 날에 점 표시, 날짜 클릭 시 그날 일지 확인) + 과목별 학습 현황 표(과목별 마지막 학습일/경과일수/최근 진도, 14일 이상이면 방치 경고 — `subject-summary.tsx` 참고) + 전체 일지 목록(시간순, 각 일지에 "작성 멘토" 표시) |
+| `/mentees/[menteeId]` | 수업 일지 작성 폼(날짜, 과목, 진도, 내용) + 수강 중인 수업 표시(`ClassEnrollments`) + 해당 멘티 일지의 월간 달력(일지가 있는 날에 점 표시) + 과목별 학습 현황 표(마지막 학습일/경과일수/최근 진도, 14일 이상이면 방치 경고 — `subject-summary.tsx`) + 규칙 기반 학습 진단 카드(`learning-diagnostics.tsx`, 판정 로직은 `src/lib/learning-diagnostics.ts`) + 전체 일지 목록(시간순, 각 일지에 "작성 멘토" 표시) |
 | `/mentees/[menteeId]/attendance` | 출석 전용 별도 월간 달력. 날짜 클릭 → 출석/결석/지각/사유결석 버튼; 지각/사유결석 선택 시 사유 입력란 노출(`attendance.reason`에 저장); 같은 날짜를 다시 클릭하면 저장된 상태를 다시 불러옴 |
 | `/classes` | 센터 수업(외부 강사) 관리. 목록/달력은 모든 로그인 사용자가 보지만, 새 수업 추가·수정·삭제는 `role = 'admin'`만 가능(서버 액션 + RLS 이중 체크, `classes/page.tsx`가 역할을 조회해 `isAdmin`을 `NewClassForm`/`ClassList`에 내려줌). 이번 주 휴강 처리(`class_cancellations`)는 관리자 제한 없이 모든 로그인 사용자가 가능 — 카탈로그 관리가 아니라 그날그날의 운영이라 별도로 다룸 |
-| `/events` | 센터 전체 행사 달력(견학, 캠프), 멘티 배정과 무관하게 모든 멘토가 공유. 날짜 클릭 시 그날의 행사를 보거나 추가 |
-| `/events/[eventId]` | 행사 상세 — 인라인 보기 ↔ 수정 전환과 삭제(확인 다이얼로그 후 `/events`로 리다이렉트) 지원 |
+| `/events` | 센터 전체 행사 달력(견학, 캠프, 기타), 멘티 배정과 무관하게 모든 멘토가 공유. 날짜 클릭 시 그날의 행사를 보거나 추가. 목록 항목에 행사 사진이 있으면 작은 썸네일(최대 3장 + "+N")을 함께 보여줌 |
+| `/events/[eventId]` | 행사 상세 — 제목/날짜/장소/설명/시간대별 일정/사진 갤러리가 한 카드 안에 이어짐, 인라인 보기 ↔ 수정 전환과 삭제(확인 다이얼로그 후 `/events`로 리다이렉트) 지원. 사진 업로드/삭제와 시간대별 일정 입력은 아래 두 절 참고 |
 | `/schedule` | 센터 주간 시간표 (월~금 × 09:00~20:00), `schedule/page.tsx`에 하드코딩됨 — 아직 `center_schedule` 테이블이 없어서 편집 UI가 만들어지기 전까지는 표시 전용 |
+| `/today` | "오늘 누가 오나요" — 오늘 출근 멘토(시간대 포함) + 오늘 참석 체크한 봉사자 명단/수 + 이번 주 전체 멘토 스케줄(요일별로 묶어서 표시), 모두 공용 조회. 역할에 따라 다른 입력 UI가 추가로 붙음: 멘토·관리자에게는 `MentorScheduleManager`(자기 출근 요일/시간대 추가·삭제), 봉사자에게는 `VolunteerCheckin`("오늘 참석합니다"/"참석 취소" 토글 버튼) |
+| `/profile` | 마이페이지: 이름 수정(`ProfileName`), 이메일 표시, 전체 멘티 목록 링크, "챙길 거 알림"(멘티별 학습 공백·출석 문제만 — 과목 편중/과목별 방치는 제외, `isMypageAlert` 참고), 내가 최근 작성한 일지 5건, 로그아웃 |
+
+### 상단 네비게이션과 알림
+
+로그인 상태에서는 `src/app/layout.tsx`가 모든 페이지 위에 `TopNav`(`src/components/top-nav.tsx`)를 렌더링합니다 — 예전에 있던 `bottom-nav.tsx`는 삭제되었습니다. 홈/멘티/수업/행사/내 정보로 가는 상단 탭과, 오른쪽에 알림 벨 + 프로필(이름 첫 글자 또는 기본 아이콘) 링크가 있습니다.
+
+알림은 `src/lib/notifications.ts`의 `buildNotifications()`가 `layout.tsx`에서 이미 가져온 데이터(멘티 목록, 일지, 출석, 다가오는 행사, 본인의 마지막 활동 시각)로부터 순수하게 계산합니다 — 별도 알림 테이블이나 실시간 구독은 없고, 매 요청마다 다시 계산되는 파생 데이터입니다. 세 종류:
+
+- `diagnostics` — `learning-diagnostics.ts`의 `diagnoseLearning()` 결과 중 "정상"(info)이 아닌 항목 전부(마이페이지 알림보다 범위가 넓어서 과목 편중/과목별 방치도 포함).
+- `event` — 오늘부터 7일 이내 시작하는 센터 행사.
+- `volunteer_expiry` — 본인이 봉사자 역할이고 만료까지 7일 이하 남았을 때만(멘토/관리자에게는 안 뜸).
+
+`NotificationBell`(`src/components/notification-bell.tsx`)은 서버에서 계산된 알림 목록을 받아 드롭다운으로 보여주기만 하고, "읽음" 상태는 알림 id 집합을 `localStorage`(`saessak:seen-notification-ids`)에 저장해 클라이언트에서만 관리합니다 — 다른 기기/브라우저와는 동기화되지 않습니다.
 
 ### 달력 UI 패턴 (react-day-picker)
 
@@ -101,9 +131,28 @@ npx supabase gen types typescript --linked > src/lib/database.types.ts
 - 강조색(버튼, 링크, 포커스 링, "왔음"/present 출석 상태, "캠프" 행사 종류): `emerald-600`/`emerald-700`.
 - 기능적 상태 색상(브랜드 강조색에 속하지 않으며 의도적으로 구분): 출석 `absent`(결석) = 빨강, `late`(지각) = 호박색, `excused`(사유결석) = 회색; 행사 종류 `field_trip`(견학) = 하늘색, `other`(기타) = 회색. 에러 텍스트는 테마와 무관하게 항상 `red-600`.
 
+### 행사 상세 일정 (구조화된 시간표)
+
+`center_events.schedule`은 여전히 `text` 컬럼이지만(마이그레이션 없이 애플리케이션 레벨에서만 구조화), 값은 이제 `[{ "time": "08:30", "content": "센터 집합" }, ...]` 형태의 JSON 배열을 문자열로 인코딩해서 저장합니다. 파싱/정렬/직렬화는 전부 `src/lib/event-schedule.ts`에 모여 있습니다:
+
+- `parseSchedule(raw)` — JSON이면 그대로 파싱하고, 아니면(이 기능이 생기기 전 자유 텍스트로 저장된 옛날 행사) 줄 단위로 쪼개 `[08:30]`류 앞머리 시간 패턴을 최대한 뽑아내는 하위 호환 파서로 넘어갑니다. 패턴이 안 잡히면 그 줄 전체를 시간 없는 한 항목으로 취급 — 내용은 절대 버려지지 않습니다.
+- `isStructuredSchedule(raw)` — 상세 페이지가 표(시간 | 내용)로 그릴지, 옛날처럼 문단으로 그릴지 판단하는 데 씀.
+- `serializeSchedule(items)` — 빈 줄 제거 + 시간순 정렬 후 JSON 문자열로 인코딩. 남는 항목이 없으면 `null`(= "일정 없음", 옛날과 동일한 상태).
+- `parseScheduleFormInput(raw)` — 폼이 제출한 JSON을 엄격하게 검증(모양이 안 맞으면 빈 배열)하는, 서버 액션 전용 진입점. `parseSchedule`과 달리 자유 텍스트 폴백은 하지 않습니다.
+
+입력 UI는 `src/app/events/schedule-editor.tsx`(`ScheduleEditor`)로, "일정 추가"를 누를 때마다 시간(`<input type="time">`)+내용 입력 줄이 늘어나고 줄마다 삭제할 수 있습니다. 화면에는 개별 `name` attribute가 없는 로컬 state이고, 숨겨진 `<input type="hidden" name="schedule">` 하나에 JSON을 담아 기존 `<form action={...}>` 서버 액션 제출 방식 그대로 실립니다. 실제 필터링·정렬·저장은 `createEvent`/`updateEvent`(각각 `src/app/events/actions.ts`, `src/app/events/[eventId]/actions.ts`)가 `parseScheduleFormInput` → `serializeSchedule` 순서로 처리합니다 — 클라이언트가 어떤 순서로 입력했든 저장 시점에 항상 시간순으로 정렬됩니다.
+
+### 센터 행사 사진 (Supabase Storage)
+
+행사 사진은 Storage 버킷 `event-photos`에 올라가고, 공개 URL이 `center_events.photo_urls`(`text[]`)에 누적 저장됩니다. 버킷 자체도 마이그레이션(`20260808070422_add_event_photos_storage.sql`)으로 생성했습니다 — `storage.buckets`에 `insert`하고 `storage.objects`에 RLS 정책 3개(select/insert/delete, 모두 `bucket_id = 'event-photos' and not current_mentor_blocked()`)를 붙이는 SQL이라, 대시보드에서 버킷을 수동으로 만들 필요는 없습니다. 버킷은 **public**이라 갤러리 `<img>` 태그가 서명 없이 URL을 바로 씁니다 — 행사/사진은 이미 완전 공유 데이터라 기존 신뢰 수준과 같습니다. 버킷 자체에 `file_size_limit`(5MB)과 `allowed_mime_types`(jpeg/png/webp/gif)가 걸려 있고, 업로드 폼에서도 같은 기준으로 먼저 걸러줍니다.
+
+업로드/삭제는 서버 액션(`uploadEventPhotos`/`deleteEventPhoto`, `src/app/events/[eventId]/actions.ts`)이 처리합니다 — 파일마다 `${eventId}/<uuid>-<파일명>` 경로로 올리고, DB 업데이트가 실패하면 이미 올라간 Storage 오브젝트를 롤백으로 지워서 고아 파일이 안 남게 합니다. UI는 `src/app/events/[eventId]/event-photo-gallery.tsx`(`EventPhotoGallery`)로, 행사 상세 카드 안(설명/일정 다음)에 그대로 이어져서 그리드 갤러리 + 사진 위 호버 삭제 버튼 + "사진 추가" 버튼을 보여줍니다. `/events` 달력의 날짜별 목록 항목에도 같은 사진의 작은 썸네일이 붙습니다(`events-calendar.tsx`).
+
+Server Action의 기본 요청 본문 크기 제한(1MB)은 여러 장 업로드를 곧바로 초과하므로, `next.config.ts`에서 `experimental.serverActions.bodySizeLimit`을 20mb로 올려뒀습니다.
+
 ## 데이터 모델 (`supabase/migrations/`)
 
-열두 개의 마이그레이션에 걸쳐 여덟 개의 테이블이 있습니다:
+열다섯 개의 마이그레이션에 걸쳐 열 개의 테이블(+ Storage 버킷 1개)이 있습니다:
 
 1. `20260728121422_init_schema.sql` — `mentors`, `mentees`, `weekday_registrations`, `attendance`, `session_logs`.
 2. `20260728125543_tighten_rls_mentor_scope.sql` — RLS 허점을 막음 (역사적 기록 — 이후 12번 마이그레이션에서 멘토 범위 제한 자체가 다시 제거됩니다).
@@ -117,6 +166,9 @@ npx supabase gen types typescript --linked > src/lib/database.types.ts
 10. `20260801120000_add_session_log_progress.sql` — `session_logs.progress` 추가.
 11. `20260806120000_add_mentor_role_and_expiration.sql` — `mentors.role`(`mentor_role` enum)과 `mentors.reactivated_at` 추가, 봉사자 만료 판단 함수 3종 추가, 멘토 범위 제한 RLS 정책 전체에 만료 체크 추가 (아래 "역할과 봉사자 만료" 참고).
 12. `20260806130000_shared_mentee_roster_and_class_admin.sql` — **"담당 멘토" 개념 제거**: `mentees`/`attendance`/`session_logs`/`class_enrollments`의 멘토 범위 제한 RLS를 `center_events`와 같은 완전 공유 모델로 전환하고, 더 이상 쓸모없어진 `weekday_registrations` 테이블(과 `attendance.weekday_registration_id` 컬럼)을 삭제. `public.current_mentor_role()` 함수를 추가하고 `classes`의 insert/update/delete를 `role = 'admin'` 전용으로 제한 (아래 "공용 멘티 명단" 참고).
+13. `20260808070422_add_event_photos_storage.sql` — 테이블이 아니라 Storage 버킷 `event-photos`(public, 5MB/이미지 mime 제한)와 `storage.objects` RLS 정책 3개를 추가 (위 "센터 행사 사진" 참고).
+14. `20260808100016_add_mentor_schedules.sql` — `mentor_schedules` 추가(멘토 본인의 반복 출근 요일/시간대).
+15. `20260808100019_add_volunteer_attendance.sql` — `volunteer_attendance` 추가(봉사자 본인의 당일 참석 체크).
 
 ### 테이블
 
@@ -125,7 +177,9 @@ npx supabase gen types typescript --linked > src/lib/database.types.ts
 - **`attendance`** — `(mentee_id, session_date)`당 한 행(고유 제약), `status`는 `attendance_status` enum(`present`/`absent`/`late`/`excused`), 선택적으로 `reason` 텍스트(`late`, `excused`에 사용). `mentor_id`는 이 출석을 누가 기록했는지 나타내는 정보성 컬럼일 뿐, 접근 제어에는 쓰이지 않습니다(`center_events.created_by`와 같은 역할).
 - **`session_logs`** — `(mentee_id, session_date)`당 자유롭게 작성하는 기록, 선택적으로 `subject`(자유 텍스트지만 `src/lib/subjects.ts`의 `COMMON_SUBJECTS`에서 datalist로 빠르게 고를 수 있어 그룹화할 만큼은 일관성을 유지함), 선택적으로 `progress`(짧은 자유 텍스트, 예: "문제집 45~52p", 멘티 페이지의 과목별 학습 현황 집계에서 읽음 — 아래 참고), `attendance` 행에 대한 선택적 링크. `mentor_id`는 이 일지를 누가 썼는지("작성 멘토", UI에 표시됨)를 나타내는 정보성 컬럼입니다 — insert 시점에 작성자로 고정되며, 다른 사용자가 나중에 내용을 수정해도 바뀌지 않습니다. 앞으로 AI 분석이 멘티별로 시간에 걸쳐 읽어들일 테이블입니다.
 - **`classes`** — 센터에서 운영하는 수업(외부 강사 수업): `name`, `day_of_week`, `teacher_name`, `description`, `color`(달력 점 표시용 `class_color` enum). 조회는 모두에게 열려 있지만 추가/수정/삭제는 관리자 전용입니다(아래 "공용 멘티 명단" 참고). `class_enrollments`는 멘티↔수업 조인 테이블, 완전 공유. `class_cancellations`는 수업의 주간 반복 일정에 대한 날짜별 예외이며 관리자 제한 없이 완전 공유(카탈로그 관리가 아니라 그날그날의 운영이라 관리자 제한 대상이 아닙니다).
-- **`center_events`** — `title`, `event_type`(enum: `field_trip`/`camp`/`other`), `start_date`/`end_date`(여러 날에 걸친 범위, `end_date >= start_date` 체크), `location`, `description`(짧은 소개), `schedule`(더 긴 자유 형식 일정 텍스트), `photo_urls`(`text[]`, 기본값 `{}` — **컬럼은 있지만 아직 업로드 UI나 Storage 버킷은 연결되어 있지 않음**), `created_by`(nullable, `on delete set null`, RLS에는 사용되지 않고 그냥 정보성).
+- **`center_events`** — `title`, `event_type`(enum: `field_trip`/`camp`/`other`), `start_date`/`end_date`(여러 날에 걸친 범위, `end_date >= start_date` 체크), `location`, `description`(짧은 소개), `schedule`(`text`, 시간대별 일정을 JSON으로 인코딩 — 위 "행사 상세 일정" 참고), `photo_urls`(`text[]`, 기본값 `{}`, `event-photos` Storage 버킷의 공개 URL 목록 — 위 "센터 행사 사진" 참고), `created_by`(nullable, `on delete set null`, RLS에는 사용되지 않고 그냥 정보성).
+- **`mentor_schedules`** — 멘토 본인이 등록하는 반복 출근 일정. `mentor_id`, `day_of_week`(0=일~6=토, `classes.day_of_week`와 같은 컨벤션, `src/lib/weekday.ts`), `start_time`/`end_time`(`time`, `end_time > start_time` 체크). 한 멘토가 여러 요일/시간대를 여러 행으로 등록할 수 있습니다. 조회는 완전 공유, insert/update는 본인 행 + `current_mentor_role() <> 'volunteer'`만 가능(봉사자는 반복 스케줄 대신 아래 `volunteer_attendance`로 참여), delete는 본인 행이면 역할 무관하게 가능. `/today` 페이지에서 등록·조회.
+- **`volunteer_attendance`** — 봉사자 본인의 당일 참석 체크. `volunteer_id`, `attendance_date`(`date`), `(volunteer_id, attendance_date)` unique — 체크인은 insert, 취소는 그 행 delete로 표현(별도 상태 컬럼 없음). 조회는 완전 공유, insert는 본인 + `current_mentor_role() = 'volunteer'`만 가능, delete는 본인 행이면 가능. `/today` 페이지의 "오늘 참석합니다" 버튼. **`mentor_last_activity()`(봉사자 만료 판정)는 이 테이블을 보지 않습니다** — 여전히 `session_logs`/`attendance` 작성 시각만 봅니다. 즉 "오늘 참석" 체크만 하고 일지/출석을 하나도 안 쓰면 30일 만료 카운트다운은 그대로 진행됩니다.
 
 `weekday_registrations`는 더 이상 존재하지 않습니다 — 이전에는 "어느 멘토가 어느 멘티를 담당하는가"의 단일 진실 공급원이었지만, 이 센터는 담당제를 쓰지 않는 것으로 확인되어 12번 마이그레이션에서 테이블 자체와 `attendance.weekday_registration_id` FK 컬럼을 함께 삭제했습니다. 애플리케이션 코드 어디에서도 참조하지 않던 테이블이라(SQL 에디터로 수동 입력하는 용도 외에는 UI 없음) 다른 의미로 재활용하지 않고 정리했습니다.
 
@@ -151,5 +205,4 @@ npx supabase gen types typescript --linked > src/lib/database.types.ts
 
 - **멘티 생성 UI** — 현재는 Supabase 대시보드/SQL 에디터로 직접 입력합니다.
 - **관리자 전용 화면** — 봉사자 재활성화(`mentors.reactivated_at`)와 역할 지정(`mentors.role = 'admin'`)은 아직 UI가 없고 SQL로만 가능합니다.
-- **센터 행사 사진 업로드** — `center_events.photo_urls` 컬럼(`text[]`)은 있지만, 아직 Supabase Storage 버킷도, 업로드 UI도, 행사 상세 페이지에서 사진을 보여주는 기능도 없습니다.
-- **`session_logs`에 대한 AI 분석** — 멘티별 전체 이력을 읽어서 취약점을 찾아내고 다음 수업 제안을 만듭니다. `session_logs` RLS가 이제 완전 공유라 클라이언트 세션으로도 모든 멘티의 전체 이력을 읽을 수 있으므로(더 이상 담당 배정으로 막혀 있지 않음), service-role/edge function이 필수는 아니지만 여전히 무거운 배치 작업이라면 분리하는 편이 나을 수 있습니다.
+- **`session_logs`에 대한 AI 분석** — 지금은 `src/lib/learning-diagnostics.ts`의 규칙 기반 진단(날짜 차이·횟수·비율 계산)까지만 되어 있고, 이 결과를 자연어로 설명하거나 더 깊은 패턴을 잡아내는 AI 분석은 아직 없습니다. `session_logs` RLS가 완전 공유라 클라이언트 세션으로도 모든 멘티의 전체 이력을 읽을 수 있으므로(더 이상 담당 배정으로 막혀 있지 않음), service-role/edge function이 필수는 아니지만 여전히 무거운 배치 작업이라면 분리하는 편이 나을 수 있습니다.
