@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Enums } from "@/lib/database.types";
-import { parseScheduleFormInput, serializeSchedule } from "@/lib/event-schedule";
+import {
+  isValidTimeValue,
+  parseScheduleFormInput,
+  serializeSchedule,
+} from "@/lib/event-schedule";
 
 export type EventType = Enums<"center_event_type">;
 
@@ -29,8 +33,8 @@ export async function createEvent(
   const endDate = String(formData.get("end_date") ?? "") || startDate;
   const location = String(formData.get("location") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
-  const schedule = serializeSchedule(
-    parseScheduleFormInput(String(formData.get("schedule") ?? "")),
+  const scheduleItems = parseScheduleFormInput(
+    String(formData.get("schedule") ?? ""),
   );
 
   if (!title || !startDate) {
@@ -40,6 +44,14 @@ export async function createEvent(
   if (endDate < startDate) {
     return { error: "종료일은 시작일보다 빠를 수 없습니다." };
   }
+
+  if (scheduleItems.some((item) => !isValidTimeValue(item.time))) {
+    return {
+      error: "일정 시간은 24시간 형식(HH:MM)으로 입력해주세요. 예: 14:00",
+    };
+  }
+
+  const schedule = serializeSchedule(scheduleItems);
 
   const { error } = await supabase.from("center_events").insert({
     title,

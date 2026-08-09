@@ -1,7 +1,8 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
+import { NewMenteeForm } from "./new-mentee-form";
+import { MenteeList } from "./mentee-list";
 
 export default async function MenteeListPage() {
   const supabase = await createClient();
@@ -21,36 +22,15 @@ export default async function MenteeListPage() {
         </p>
       )}
 
+      <NewMenteeForm />
+
       {!error && mentees?.length === 0 && (
         <Card>
-          <p className="text-sm text-stone-500">
-            등록된 멘티가 없습니다. Supabase 대시보드에서 mentees 테이블에
-            추가해보세요.
-          </p>
+          <p className="text-sm text-stone-500">등록된 멘티가 없습니다.</p>
         </Card>
       )}
 
-      {mentees && mentees.length > 0 && (
-        <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
-          <ul className="flex flex-col divide-y divide-stone-100">
-            {mentees.map((mentee) => (
-              <li key={mentee.id}>
-                <Link
-                  href={`/mentees/${mentee.id}`}
-                  className="flex items-center justify-between gap-3 px-6 py-4 hover:bg-emerald-50"
-                >
-                  <span className="font-medium text-stone-900">
-                    {mentee.name}
-                  </span>
-                  <span className="text-sm text-stone-500">
-                    {[mentee.school, mentee.grade].filter(Boolean).join(" · ")}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {mentees && mentees.length > 0 && <MenteeList mentees={mentees} />}
     </div>
   );
 }
