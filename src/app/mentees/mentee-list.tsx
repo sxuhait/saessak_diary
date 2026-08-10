@@ -44,7 +44,7 @@ function EditMenteeForm({
   }
 
   return (
-    <form action={handleSubmit} className="flex flex-col gap-3">
+    <form action={handleSubmit} autoComplete="off" className="flex flex-col gap-3">
       <div>
         <label htmlFor={`name-${mentee.id}`} className={labelClass}>
           학생 이름
@@ -54,6 +54,7 @@ function EditMenteeForm({
           name="name"
           type="text"
           required
+          autoComplete="off"
           defaultValue={mentee.name}
           className={fieldClass}
         />

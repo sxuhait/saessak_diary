@@ -37,6 +37,11 @@ export default async function MenteeSessionLogPage({
     notFound();
   }
 
+  const { data: allMentees } = await supabase
+    .from("mentees")
+    .select("id, name")
+    .order("name");
+
   const { data: logRows, error: logsError } = await supabase
     .from("session_logs")
     .select("id, session_date, subject, progress, content, mentor_id, mentors(name)")
@@ -84,13 +89,15 @@ export default async function MenteeSessionLogPage({
     .select("session_date, status")
     .eq("mentee_id", menteeId);
 
+  const menteeSubtitle = [mentee.school, mentee.grade].filter(Boolean).join(" · ");
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <PageHeader
         backHref="/mentees"
         backLabel="멘티 목록으로"
-        title={`${mentee.name} 일지 작성`}
-        description={[mentee.school, mentee.grade].filter(Boolean).join(" · ")}
+        title="새 일지 작성"
+        description={`${mentee.name} 학생${menteeSubtitle ? ` · ${menteeSubtitle}` : ""}의 학습 일지를 기록하세요.`}
         action={
           <Link
             href={`/mentees/${mentee.id}/attendance`}
@@ -109,23 +116,22 @@ export default async function MenteeSessionLogPage({
 
       <PostSaveFeedbackPrompt trigger={saved === "1"} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          <ClassEnrollments
-            menteeId={mentee.id}
-            enrolled={enrolled}
-            allClasses={allClasses ?? []}
-          />
+      <ClassEnrollments
+        menteeId={mentee.id}
+        enrolled={enrolled}
+        allClasses={allClasses ?? []}
+      />
 
-          <SessionLogForm menteeId={mentee.id} />
-        </div>
-
-        <div className="flex flex-col gap-6 lg:col-span-1">
-          <SubjectSummary logs={logs ?? []} />
-
-          <LearningDiagnostics logs={logs ?? []} attendance={attendance ?? []} />
-        </div>
-      </div>
+      <SessionLogForm
+        menteeId={mentee.id}
+        mentees={allMentees ?? []}
+        diagnosticsSlot={
+          <>
+            <SubjectSummary logs={logs ?? []} />
+            <LearningDiagnostics logs={logs ?? []} attendance={attendance ?? []} />
+          </>
+        }
+      />
 
       <LogCalendar logs={logs ?? []} />
 

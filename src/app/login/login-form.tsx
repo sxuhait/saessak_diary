@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { cardClassName } from "@/components/ui/card";
 import { labelClass, fieldClass, primaryButtonClass } from "@/components/ui/form";
 import { login, type LoginState } from "./actions";
 
@@ -12,12 +11,9 @@ export function LoginForm({ notice }: { notice?: string }) {
   const [state, formAction, pending] = useActionState(login, initialState);
 
   return (
-    <form
-      action={formAction}
-      className={`w-full max-w-sm space-y-5 ${cardClassName}`}
-    >
+    <form action={formAction} className="w-full max-w-sm space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-stone-900">
           멘토 로그인
         </h1>
         <p className="mt-1.5 text-sm text-stone-500">

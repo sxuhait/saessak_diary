@@ -1,98 +1,108 @@
+import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
-import { cardClassName } from "@/components/ui/card";
+import { parseSchedule, sortScheduleItems } from "@/lib/event-schedule";
+import { WeeklyScheduleGrid, type ScheduleBlock } from "./weekly-schedule-grid";
 
-// Static for now -- there's no `center_schedule` table yet, this is just the
-// standard weekly template hardcoded until an edit UI exists (see Roadmap).
-type ScheduleRow =
-  | { time: string; type: "shared"; label: string }
-  | { time: string; type: "byDay"; days: [string, string, string, string, string] };
+function toISODate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
-const WEEKDAY_LABELS = ["월", "화", "수", "목", "금"];
+function fromISODate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
 
-// One pastel per weekday column, reused only for this page's "요일별 수업"
-// row -- kept separate from the class_color enum in class-colors.ts since
-// that palette is tied to editable class records, not this static template.
-const DAY_COLORS = [
-  { bg: "bg-rose-100", text: "text-rose-800", border: "border-rose-200" },
-  { bg: "bg-amber-100", text: "text-amber-800", border: "border-amber-200" },
-  { bg: "bg-violet-100", text: "text-violet-800", border: "border-violet-200" },
-  { bg: "bg-sky-100", text: "text-sky-800", border: "border-sky-200" },
-  { bg: "bg-teal-100", text: "text-teal-800", border: "border-teal-200" },
-];
+function getWeekdayRange(today: Date) {
+  const dayOfWeek = today.getDay(); // 0 = Sun .. 6 = Sat
+  const daysSinceMonday = (dayOfWeek + 6) % 7;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - daysSinceMonday);
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+  return { monday, friday };
+}
 
-const SCHEDULE_ROWS: ScheduleRow[] = [
-  { time: "09:00~12:00", type: "shared", label: "개관·자유활동" },
-  { time: "12:00~13:00", type: "shared", label: "점심" },
-  { time: "13:00~15:00", type: "shared", label: "자유활동·독서" },
-  { time: "15:00~16:00", type: "shared", label: "간식·놀이" },
-  {
-    time: "16:00~17:30",
-    type: "byDay",
-    days: ["숙제지도", "영어수업", "연극수업", "미술수업", "독서수업"],
-  },
-  { time: "17:30~18:30", type: "shared", label: "저녁식사" },
-  { time: "18:30~19:30", type: "shared", label: "멘토링" },
-  { time: "19:30~20:00", type: "shared", label: "정리·하원" },
-];
+const weekHeaderFormatter = new Intl.DateTimeFormat("ko-KR", {
+  month: "long",
+  day: "numeric",
+});
 
-export default function SchedulePage() {
+export default async function SchedulePage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { monday, friday } = getWeekdayRange(new Date());
+  const mondayIso = toISODate(monday);
+  const fridayIso = toISODate(friday);
+
+  const { data: mentorSchedules } = await supabase
+    .from("mentor_schedules")
+    .select("id, mentor_id, day_of_week, start_time, end_time, mentors(name)")
+    .gte("day_of_week", 1)
+    .lte("day_of_week", 5);
+
+  const { data: events } = await supabase
+    .from("center_events")
+    .select("id, title, event_type, start_date, end_date, location, schedule")
+    .lte("start_date", fridayIso)
+    .gte("end_date", mondayIso);
+
+  const blocks: ScheduleBlock[] = [];
+
+  for (const item of mentorSchedules ?? []) {
+    blocks.push({
+      id: `mentor-${item.id}`,
+      dayOfWeek: item.day_of_week,
+      startTime: item.start_time,
+      endTime: item.end_time,
+      category: "mentoring",
+      title: "1:1 멘토링",
+      subtitle: item.mentors?.name ? `멘토: ${item.mentors.name}` : null,
+      mentorId: item.mentor_id,
+    });
+  }
+
+  for (const event of events ?? []) {
+    const scheduleItems = sortScheduleItems(parseSchedule(event.schedule));
+    const anchorTime = scheduleItems.find((entry) => entry.time)?.time ?? "09:00";
+
+    for (
+      let cursor = new Date(Math.max(fromISODate(event.start_date).getTime(), monday.getTime()));
+      cursor.getTime() <= Math.min(fromISODate(event.end_date).getTime(), friday.getTime());
+      cursor.setDate(cursor.getDate() + 1)
+    ) {
+      const dayOfWeek = cursor.getDay();
+      if (dayOfWeek < 1 || dayOfWeek > 5) continue;
+
+      blocks.push({
+        id: `event-${event.id}-${toISODate(cursor)}`,
+        dayOfWeek,
+        startTime: anchorTime,
+        endTime: null,
+        category: event.event_type,
+        title: event.title,
+        subtitle: event.location,
+        mentorId: null,
+      });
+    }
+  }
+
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <PageHeader
         backHref="/"
         backLabel="홈으로"
         title="센터 주간 시간표"
-        description="운영시간 09:00~20:00 (월~금)"
+        description={`${weekHeaderFormatter.format(monday)} - ${weekHeaderFormatter.format(friday)} · 운영시간 09:00~20:00`}
       />
 
-      <div className={`w-full overflow-x-auto ${cardClassName}`}>
-        <table className="w-full min-w-[640px] border-separate border-spacing-1 text-sm">
-          <thead>
-            <tr>
-              <th className="w-24 rounded-lg bg-emerald-50 px-2 py-2 text-left text-xs font-medium text-emerald-700">
-                시간
-              </th>
-              {WEEKDAY_LABELS.map((label) => (
-                <th
-                  key={label}
-                  className="rounded-lg bg-emerald-50 px-2 py-2 text-center text-xs font-medium text-emerald-700"
-                >
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {SCHEDULE_ROWS.map((row) => (
-              <tr key={row.time}>
-                <td className="whitespace-nowrap rounded-lg bg-stone-50 px-2 py-3 text-xs font-medium text-stone-600">
-                  {row.time}
-                </td>
-                {row.type === "shared" ? (
-                  <td
-                    colSpan={5}
-                    className="rounded-lg border border-stone-200 bg-stone-50/60 px-2 py-3 text-center text-stone-700"
-                  >
-                    {row.label}
-                  </td>
-                ) : (
-                  row.days.map((label, index) => {
-                    const color = DAY_COLORS[index];
-                    return (
-                      <td
-                        key={WEEKDAY_LABELS[index]}
-                        className={`rounded-lg border px-2 py-3 text-center font-medium ${color.bg} ${color.text} ${color.border}`}
-                      >
-                        {label}
-                      </td>
-                    );
-                  })
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <WeeklyScheduleGrid blocks={blocks} currentUserId={user?.id} />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { AuthSplitLayout } from "@/components/auth-split-layout";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage({
@@ -8,8 +9,8 @@ export default async function LoginPage({
   const { notice } = await searchParams;
 
   return (
-    <div className="flex flex-1 items-center justify-center px-4">
+    <AuthSplitLayout>
       <LoginForm notice={notice} />
-    </div>
+    </AuthSplitLayout>
   );
 }

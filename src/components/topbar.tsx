@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CircleUserRound, MessageSquareHeart, Search } from "lucide-react";
+import { CircleUserRound, MessageSquareHeart } from "lucide-react";
 import { NotificationBell } from "@/components/notification-bell";
 import { FeedbackModal } from "@/components/feedback-modal";
+import { SearchBar } from "@/components/search-bar";
 import type { AppNotification } from "@/lib/notifications";
 
 export function Topbar({
@@ -18,17 +19,8 @@ export function Topbar({
 
   return (
     <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-stone-200 bg-white px-4 py-3 sm:gap-4 sm:px-6">
-      <div className="relative flex-1 max-w-sm">
-        <Search
-          className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-stone-400"
-          aria-hidden
-        />
-        <input
-          type="search"
-          placeholder="일지, 멘티 검색..."
-          disabled
-          className="w-full rounded-xl border border-stone-200 bg-stone-50 py-2.5 pr-4 pl-10 text-sm text-stone-500 placeholder:text-stone-400"
-        />
+      <div className="flex-1">
+        <SearchBar />
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">

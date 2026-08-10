@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { cardClassName } from "@/components/ui/card";
+import { AuthSplitLayout } from "@/components/auth-split-layout";
 import { labelClass, fieldClass, primaryButtonClass } from "@/components/ui/form";
 import { signup, type SignupState } from "./actions";
 
@@ -12,13 +12,10 @@ export default function SignupPage() {
   const [state, formAction, pending] = useActionState(signup, initialState);
 
   return (
-    <div className="flex flex-1 items-center justify-center px-4">
-      <form
-        action={formAction}
-        className={`w-full max-w-sm space-y-5 ${cardClassName}`}
-      >
+    <AuthSplitLayout>
+      <form action={formAction} className="w-full max-w-sm space-y-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-stone-900">
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-stone-900">
             멘토 회원가입
           </h1>
           <p className="mt-1.5 text-sm text-stone-500">
@@ -115,6 +112,6 @@ export default function SignupPage() {
           </Link>
         </p>
       </form>
-    </div>
+    </AuthSplitLayout>
   );
 }

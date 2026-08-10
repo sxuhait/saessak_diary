@@ -14,7 +14,11 @@ export function NewMenteeForm() {
   );
 
   return (
-    <form action={formAction} className={`flex flex-col gap-4 ${cardClassName}`}>
+    <form
+      action={formAction}
+      autoComplete="off"
+      className={`flex flex-col gap-4 ${cardClassName}`}
+    >
       <h2 className="text-base font-semibold text-stone-900">학생 추가</h2>
 
       <div>
@@ -26,6 +30,7 @@ export function NewMenteeForm() {
           name="name"
           type="text"
           required
+          autoComplete="off"
           placeholder="예: 김새싹"
           className={fieldClass}
         />

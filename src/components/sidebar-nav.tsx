@@ -24,7 +24,7 @@ const NAV_ITEMS: {
 }[] = [
   { href: "/", label: "대시보드", icon: Home, isActive: (p) => p === "/" },
   { href: "/mentees", label: "멘티", icon: Users, isActive: (p) => p.startsWith("/mentees") },
-  { href: "/mentees", label: "일지", icon: NotebookPen, isActive: () => false },
+  { href: "/logs", label: "일지", icon: NotebookPen, isActive: (p) => p.startsWith("/logs") },
   { href: "/history", label: "기록", icon: History, isActive: (p) => p.startsWith("/history") },
   { href: "/classes", label: "수업", icon: GraduationCap, isActive: (p) => p.startsWith("/classes") },
   { href: "/events", label: "행사", icon: CalendarDays, isActive: (p) => p.startsWith("/events") },
