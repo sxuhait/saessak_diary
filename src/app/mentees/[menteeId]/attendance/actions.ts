@@ -24,6 +24,17 @@ export async function setAttendance(
     return { error: "로그인이 필요합니다." };
   }
 
+  const { data: existing } = await supabase
+    .from("attendance")
+    .select("mentor_id")
+    .eq("mentee_id", menteeId)
+    .eq("session_date", sessionDate)
+    .maybeSingle();
+
+  if (existing && existing.mentor_id !== user.id) {
+    return { error: "본인이 기록한 출석만 수정할 수 있습니다." };
+  }
+
   const { error } = await supabase.from("attendance").upsert(
     {
       mentee_id: menteeId,
@@ -59,6 +70,17 @@ export async function clearAttendance(
 
   if (!user) {
     return { error: "로그인이 필요합니다." };
+  }
+
+  const { data: existing } = await supabase
+    .from("attendance")
+    .select("mentor_id")
+    .eq("mentee_id", menteeId)
+    .eq("session_date", sessionDate)
+    .maybeSingle();
+
+  if (existing && existing.mentor_id !== user.id) {
+    return { error: "본인이 기록한 출석만 삭제할 수 있습니다." };
   }
 
   const { error } = await supabase

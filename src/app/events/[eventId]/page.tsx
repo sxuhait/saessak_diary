@@ -12,6 +12,18 @@ export default async function EventDetailPage({
 
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: mentor } = await supabase
+    .from("mentors")
+    .select("role")
+    .eq("id", user?.id ?? "")
+    .maybeSingle();
+
+  const isAdmin = mentor?.role === "admin";
+
   const { data: event, error } = await supabase
     .from("center_events")
     .select(
@@ -33,7 +45,7 @@ export default async function EventDetailPage({
         ← 행사 달력으로
       </Link>
 
-      <EventDetail event={event} />
+      <EventDetail event={event} isAdmin={isAdmin} />
     </div>
   );
 }

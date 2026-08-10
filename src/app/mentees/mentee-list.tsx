@@ -2,16 +2,15 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { NotebookPen, Pencil, Search, Trash2, UserPlus, X } from "lucide-react";
 import {
   labelClass,
   fieldClass,
   primaryButtonClass,
   secondaryButtonClass,
-  textActionClass,
-  textDangerActionClass,
 } from "@/components/ui/form";
 import { deleteMentee, updateMenteeName } from "./actions";
+import { NewMenteeForm } from "./new-mentee-form";
 
 type Mentee = {
   id: string;
@@ -45,10 +44,7 @@ function EditMenteeForm({
   }
 
   return (
-    <form
-      action={handleSubmit}
-      className="flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5"
-    >
+    <form action={handleSubmit} className="flex flex-col gap-3">
       <div>
         <label htmlFor={`name-${mentee.id}`} className={labelClass}>
           학생 이름
@@ -59,7 +55,7 @@ function EditMenteeForm({
           type="text"
           required
           defaultValue={mentee.name}
-          className={`${fieldClass} bg-white`}
+          className={fieldClass}
         />
       </div>
 
@@ -77,9 +73,95 @@ function EditMenteeForm({
   );
 }
 
-export function MenteeList({ mentees }: { mentees: Mentee[] }) {
+function MenteeCard({
+  mentee,
+  editing,
+  onEdit,
+  onCancelEdit,
+  onSaved,
+  onDelete,
+  deleting,
+  deleteError,
+  canDelete,
+}: {
+  mentee: Mentee;
+  editing: boolean;
+  onEdit: () => void;
+  onCancelEdit: () => void;
+  onSaved: () => void;
+  onDelete: () => void;
+  deleting: boolean;
+  deleteError?: string;
+  canDelete: boolean;
+}) {
+  if (editing) {
+    return (
+      <div className="rounded-3xl border border-emerald-200 bg-emerald-50/40 p-6 shadow-soft">
+        <EditMenteeForm mentee={mentee} onCancel={onCancelEdit} onSaved={onSaved} />
+      </div>
+    );
+  }
+
+  const subtitle = [mentee.school, mentee.grade].filter(Boolean).join(" · ");
+
+  return (
+    <div className="flex flex-col rounded-3xl border border-stone-200 bg-white p-6 shadow-soft">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-lg font-semibold text-emerald-700">
+            {mentee.name[0]}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate font-medium text-stone-900">{mentee.name}</p>
+            {subtitle && <p className="truncate text-xs text-stone-500">{subtitle}</p>}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label="이름 수정"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+          >
+            <Pencil className="h-4 w-4" aria-hidden />
+          </button>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={deleting}
+              aria-label="삭제"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-stone-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {deleteError && <p className="mt-2 text-xs text-red-600">{deleteError}</p>}
+
+      <Link
+        href={`/mentees/${mentee.id}`}
+        className={`mt-4 flex items-center justify-center gap-2 ${primaryButtonClass}`}
+      >
+        <NotebookPen className="h-4 w-4" aria-hidden />
+        일지 작성
+      </Link>
+    </div>
+  );
+}
+
+export function MenteeList({
+  mentees,
+  isAdmin,
+}: {
+  mentees: Mentee[];
+  isAdmin: boolean;
+}) {
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<{
     id: string;
@@ -89,9 +171,7 @@ export function MenteeList({ mentees }: { mentees: Mentee[] }) {
   const filtered = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
     if (!trimmed) return mentees;
-    return mentees.filter((mentee) =>
-      mentee.name.toLowerCase().includes(trimmed),
-    );
+    return mentees.filter((mentee) => mentee.name.toLowerCase().includes(trimmed));
   }, [mentees, query]);
 
   async function handleDelete(mentee: Mentee) {
@@ -112,8 +192,8 @@ export function MenteeList({ mentees }: { mentees: Mentee[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="relative">
+    <div className="flex flex-col gap-4">
+      <div className="relative max-w-sm">
         <Search
           className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-stone-400"
           aria-hidden
@@ -132,67 +212,53 @@ export function MenteeList({ mentees }: { mentees: Mentee[] }) {
         {query.trim() ? `검색 결과 ${filtered.length}명` : `전체 ${mentees.length}명`}
       </p>
 
-      <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
-        {filtered.length === 0 ? (
-          <p className="px-6 py-10 text-center text-sm text-stone-500">
-            검색 결과가 없습니다.
-          </p>
-        ) : (
-          <ul className="flex max-h-[32rem] flex-col divide-y divide-stone-100 overflow-y-auto">
-            {filtered.map((mentee) => (
-              <li key={mentee.id}>
-                {editingId === mentee.id ? (
-                  <div className="p-4 sm:p-6">
-                    <EditMenteeForm
-                      mentee={mentee}
-                      onCancel={() => setEditingId(null)}
-                      onSaved={() => setEditingId(null)}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 px-4 py-4 hover:bg-emerald-50 sm:px-6">
-                    <Link
-                      href={`/mentees/${mentee.id}`}
-                      className="flex min-w-0 flex-1 items-center justify-between gap-3"
-                    >
-                      <span className="truncate font-medium text-stone-900">
-                        {mentee.name}
-                      </span>
-                      <span className="shrink-0 text-sm text-stone-500">
-                        {[mentee.school, mentee.grade]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
-                    </Link>
-                    <div className="flex shrink-0 items-center gap-3 pl-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditingId(mentee.id)}
-                        className={textActionClass}
-                      >
-                        수정
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(mentee)}
-                        disabled={deletingId === mentee.id}
-                        className={textDangerActionClass}
-                      >
-                        {deletingId === mentee.id ? "삭제 중..." : "삭제"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {deleteError?.id === mentee.id && (
-                  <p className="px-4 pb-3 text-xs text-red-600 sm:px-6">
-                    {deleteError.message}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {query.trim() && filtered.length === 0 ? (
+        <p className="rounded-3xl border border-stone-200 bg-white px-6 py-10 text-center text-sm text-stone-500 shadow-soft">
+          검색 결과가 없습니다.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((mentee) => (
+            <MenteeCard
+              key={mentee.id}
+              mentee={mentee}
+              editing={editingId === mentee.id}
+              onEdit={() => setEditingId(mentee.id)}
+              onCancelEdit={() => setEditingId(null)}
+              onSaved={() => setEditingId(null)}
+              onDelete={() => handleDelete(mentee)}
+              deleting={deletingId === mentee.id}
+              deleteError={deleteError?.id === mentee.id ? deleteError.message : undefined}
+              canDelete={isAdmin}
+            />
+          ))}
+
+          {addOpen ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setAddOpen(false)}
+                aria-label="닫기"
+                className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+              <NewMenteeForm />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-stone-300 p-6 text-stone-500 hover:border-emerald-400 hover:bg-emerald-50/40 hover:text-emerald-700"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                <UserPlus className="h-5 w-5" aria-hidden />
+              </span>
+              <span className="text-sm font-medium">학생 추가</span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

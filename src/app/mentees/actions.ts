@@ -94,6 +94,16 @@ export async function deleteMentee(
     return { error: "로그인이 필요합니다." };
   }
 
+  const { data: mentor } = await supabase
+    .from("mentors")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (mentor?.role !== "admin") {
+    return { error: "관리자만 학생을 삭제할 수 있습니다." };
+  }
+
   const { error } = await supabase.from("mentees").delete().eq("id", menteeId);
 
   if (error) {

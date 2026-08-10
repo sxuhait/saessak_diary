@@ -23,6 +23,10 @@ export default async function MenteeSessionLogPage({
 
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data: mentee, error } = await supabase
     .from("mentees")
     .select("id, name, school, grade")
@@ -35,7 +39,7 @@ export default async function MenteeSessionLogPage({
 
   const { data: logRows, error: logsError } = await supabase
     .from("session_logs")
-    .select("id, session_date, subject, progress, content, mentors(name)")
+    .select("id, session_date, subject, progress, content, mentor_id, mentors(name)")
     .eq("mentee_id", menteeId)
     .order("session_date", { ascending: false })
     .order("created_at", { ascending: false });
@@ -47,6 +51,7 @@ export default async function MenteeSessionLogPage({
     progress: log.progress,
     content: log.content,
     authorName: log.mentors?.name ?? null,
+    mentorId: log.mentor_id,
   }));
 
   const { data: enrollmentRows } = await supabase
@@ -80,7 +85,7 @@ export default async function MenteeSessionLogPage({
     .eq("mentee_id", menteeId);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <PageHeader
         backHref="/mentees"
         backLabel="멘티 목록으로"
@@ -96,12 +101,6 @@ export default async function MenteeSessionLogPage({
         }
       />
 
-      <ClassEnrollments
-        menteeId={mentee.id}
-        enrolled={enrolled}
-        allClasses={allClasses ?? []}
-      />
-
       {saved === "1" && (
         <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           저장되었습니다.
@@ -110,13 +109,25 @@ export default async function MenteeSessionLogPage({
 
       <PostSaveFeedbackPrompt trigger={saved === "1"} />
 
-      <SessionLogForm menteeId={mentee.id} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          <ClassEnrollments
+            menteeId={mentee.id}
+            enrolled={enrolled}
+            allClasses={allClasses ?? []}
+          />
+
+          <SessionLogForm menteeId={mentee.id} />
+        </div>
+
+        <div className="flex flex-col gap-6 lg:col-span-1">
+          <SubjectSummary logs={logs ?? []} />
+
+          <LearningDiagnostics logs={logs ?? []} attendance={attendance ?? []} />
+        </div>
+      </div>
 
       <LogCalendar logs={logs ?? []} />
-
-      <SubjectSummary logs={logs ?? []} />
-
-      <LearningDiagnostics logs={logs ?? []} attendance={attendance ?? []} />
 
       <div className="flex w-full flex-col gap-3">
         <h2 className="text-lg font-semibold text-stone-900">지난 일지</h2>
@@ -127,7 +138,9 @@ export default async function MenteeSessionLogPage({
           </p>
         )}
 
-        {!logsError && <SessionLogList logs={logs ?? []} />}
+        {!logsError && (
+          <SessionLogList logs={logs ?? []} currentMentorId={user?.id} />
+        )}
       </div>
     </div>
   );

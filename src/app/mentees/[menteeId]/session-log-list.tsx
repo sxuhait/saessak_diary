@@ -20,6 +20,7 @@ type SessionLog = {
   progress: string | null;
   content: string;
   authorName: string | null;
+  mentorId: string;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -134,7 +135,13 @@ function EditLogForm({
   );
 }
 
-export function SessionLogList({ logs }: { logs: SessionLog[] }) {
+export function SessionLogList({
+  logs,
+  currentMentorId,
+}: {
+  logs: SessionLog[];
+  currentMentorId?: string;
+}) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<{
@@ -200,21 +207,29 @@ export function SessionLogList({ logs }: { logs: SessionLog[] }) {
             </p>
 
             <div className="mt-3 flex items-center gap-4 border-t border-stone-100 pt-3">
-              <button
-                type="button"
-                onClick={() => setEditingId(log.id)}
-                className={textActionClass}
-              >
-                수정
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(log)}
-                disabled={deletingId === log.id}
-                className={textDangerActionClass}
-              >
-                {deletingId === log.id ? "삭제 중..." : "삭제"}
-              </button>
+              {log.mentorId === currentMentorId ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setEditingId(log.id)}
+                    className={textActionClass}
+                  >
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(log)}
+                    disabled={deletingId === log.id}
+                    className={textDangerActionClass}
+                  >
+                    {deletingId === log.id ? "삭제 중..." : "삭제"}
+                  </button>
+                </>
+              ) : (
+                <span className="text-xs text-stone-400">
+                  본인이 작성한 일지만 수정·삭제할 수 있습니다
+                </span>
+              )}
               {deleteError?.id === log.id && (
                 <span className="text-xs text-red-600">
                   {deleteError.message}

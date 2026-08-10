@@ -1,11 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card } from "@/components/ui/card";
-import { NewMenteeForm } from "./new-mentee-form";
 import { MenteeList } from "./mentee-list";
 
 export default async function MenteeListPage() {
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: mentor } = await supabase
+    .from("mentors")
+    .select("role")
+    .eq("id", user?.id ?? "")
+    .maybeSingle();
+
+  const isAdmin = mentor?.role === "admin";
 
   const { data: mentees, error } = await supabase
     .from("mentees")
@@ -13,7 +23,7 @@ export default async function MenteeListPage() {
     .order("name");
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <PageHeader backHref="/" backLabel="홈으로" title="멘티 목록" />
 
       {error && (
@@ -22,15 +32,7 @@ export default async function MenteeListPage() {
         </p>
       )}
 
-      <NewMenteeForm />
-
-      {!error && mentees?.length === 0 && (
-        <Card>
-          <p className="text-sm text-stone-500">등록된 멘티가 없습니다.</p>
-        </Card>
-      )}
-
-      {mentees && mentees.length > 0 && <MenteeList mentees={mentees} />}
+      <MenteeList mentees={mentees ?? []} isAdmin={isAdmin} />
     </div>
   );
 }

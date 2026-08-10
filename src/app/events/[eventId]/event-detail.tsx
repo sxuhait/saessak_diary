@@ -162,15 +162,26 @@ function EditEventForm({
   );
 }
 
-export function EventDetail({ event }: { event: CenterEvent }) {
+export function EventDetail({
+  event,
+  isAdmin,
+}: {
+  event: CenterEvent;
+  isAdmin: boolean;
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function handleDelete() {
     if (!confirm(`"${event.title}" 행사를 삭제하시겠습니까?`)) return;
     setDeleting(true);
-    await deleteEvent(event.id);
+    setDeleteError(null);
+    const result = await deleteEvent(event.id);
     setDeleting(false);
+    if (result?.error) {
+      setDeleteError(result.error);
+    }
   }
 
   if (isEditing) {
@@ -258,7 +269,7 @@ export function EventDetail({ event }: { event: CenterEvent }) {
         />
       </div>
 
-      <div className="flex gap-4 border-t border-stone-100 pt-4">
+      <div className="flex items-center gap-4 border-t border-stone-100 pt-4">
         <button
           type="button"
           onClick={() => setIsEditing(true)}
@@ -266,14 +277,19 @@ export function EventDetail({ event }: { event: CenterEvent }) {
         >
           수정
         </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={deleting}
-          className={textDangerActionClass}
-        >
-          {deleting ? "삭제 중..." : "삭제"}
-        </button>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            className={textDangerActionClass}
+          >
+            {deleting ? "삭제 중..." : "삭제"}
+          </button>
+        )}
+        {deleteError && (
+          <span className="text-xs text-red-600">{deleteError}</span>
+        )}
       </div>
     </div>
   );

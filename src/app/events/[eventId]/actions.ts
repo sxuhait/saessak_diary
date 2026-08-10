@@ -89,7 +89,7 @@ export async function updateEvent(
   return {};
 }
 
-export async function deleteEvent(eventId: string) {
+export async function deleteEvent(eventId: string): Promise<EventActionState> {
   const supabase = await createClient();
 
   const {
@@ -97,10 +97,24 @@ export async function deleteEvent(eventId: string) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return;
+    return { error: "로그인이 필요합니다." };
   }
 
-  await supabase.from("center_events").delete().eq("id", eventId);
+  const { data: mentor } = await supabase
+    .from("mentors")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (mentor?.role !== "admin") {
+    return { error: "관리자만 행사를 삭제할 수 있습니다." };
+  }
+
+  const { error } = await supabase.from("center_events").delete().eq("id", eventId);
+
+  if (error) {
+    return { error: "행사 삭제에 실패했습니다." };
+  }
 
   revalidatePath("/events");
   revalidatePath("/");
