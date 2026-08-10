@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CircleUserRound, Sprout } from "lucide-react";
+import { useState } from "react";
+import { CircleUserRound, MessageSquareHeart, Sprout } from "lucide-react";
 import { NotificationBell } from "@/components/notification-bell";
+import { FeedbackModal } from "@/components/feedback-modal";
 import type { AppNotification } from "@/lib/notifications";
 
-const NAV_ITEMS: {
+const BASE_NAV_ITEMS: {
   href: string;
   label: string;
   isActive: (pathname: string) => boolean;
@@ -39,14 +41,24 @@ const NAV_ITEMS: {
   },
 ];
 
+const ADMIN_NAV_ITEM = {
+  href: "/feedback",
+  label: "피드백함",
+  isActive: (pathname: string) => pathname.startsWith("/feedback"),
+};
+
 export function TopNav({
   profileInitial,
   notifications = [],
+  isAdmin = false,
 }: {
   profileInitial?: string;
   notifications?: AppNotification[];
+  isAdmin?: boolean;
 }) {
   const pathname = usePathname();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const navItems = isAdmin ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM] : BASE_NAV_ITEMS;
 
   return (
     <header className="sticky top-0 z-40 border-b border-stone-200 bg-white">
@@ -62,7 +74,7 @@ export function TopNav({
         </Link>
 
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
-          {NAV_ITEMS.map(({ href, label, isActive }) => {
+          {navItems.map(({ href, label, isActive }) => {
             const active = isActive(pathname);
             return (
               <Link
@@ -81,6 +93,14 @@ export function TopNav({
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => setFeedbackOpen(true)}
+            aria-label="피드백 남기기"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-stone-500 transition-colors hover:bg-stone-50 hover:text-stone-900"
+          >
+            <MessageSquareHeart className="h-5 w-5" aria-hidden />
+          </button>
           <NotificationBell notifications={notifications} />
           <Link
             href="/profile"
@@ -91,6 +111,11 @@ export function TopNav({
           </Link>
         </div>
       </div>
+
+      <FeedbackModal
+        open={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+      />
     </header>
   );
 }

@@ -9,6 +9,7 @@ import { SessionLogList } from "./session-log-list";
 import { ClassEnrollments } from "./class-enrollments";
 import { SubjectSummary } from "./subject-summary";
 import { LearningDiagnostics } from "./learning-diagnostics";
+import { PostSaveFeedbackPrompt } from "./post-save-feedback-prompt";
 
 export default async function MenteeSessionLogPage({
   params,
@@ -106,6 +107,8 @@ export default async function MenteeSessionLogPage({
           저장되었습니다.
         </p>
       )}
+
+      <PostSaveFeedbackPrompt trigger={saved === "1"} />
 
       <SessionLogForm menteeId={mentee.id} />
 

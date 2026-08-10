@@ -40,6 +40,7 @@ export default async function RootLayout({
 
   let profileInitial: string | undefined;
   let notifications: AppNotification[] = [];
+  let isAdmin = false;
 
   if (user) {
     const { data: mentor } = await supabase
@@ -49,6 +50,7 @@ export default async function RootLayout({
       .maybeSingle();
     const name = mentor?.name?.trim();
     profileInitial = name && !name.includes("@") ? name[0] : undefined;
+    isAdmin = mentor?.role === "admin";
 
     const { data: mentees } = await supabase
       .from("mentees")
@@ -112,7 +114,11 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         {user && (
-          <TopNav profileInitial={profileInitial} notifications={notifications} />
+          <TopNav
+            profileInitial={profileInitial}
+            notifications={notifications}
+            isAdmin={isAdmin}
+          />
         )}
         {children}
       </body>

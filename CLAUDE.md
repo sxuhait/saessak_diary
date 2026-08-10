@@ -95,6 +95,7 @@ npx supabase migration repair --status applied <version>    # 예: 2026080807042
 | `/schedule` | 센터 주간 시간표 (월~금 × 09:00~20:00), `schedule/page.tsx`에 하드코딩됨 — 아직 `center_schedule` 테이블이 없어서 편집 UI가 만들어지기 전까지는 표시 전용 |
 | `/today` | "오늘 누가 오나요" — 오늘 출근 멘토(시간대 포함) + 오늘 참석 체크한 봉사자 명단/수 + 이번 주 전체 멘토 스케줄(요일별로 묶어서 표시), 모두 공용 조회. 역할에 따라 다른 입력 UI가 추가로 붙음: 멘토·관리자에게는 `MentorScheduleManager`(자기 출근 요일/시간대 추가·삭제), 봉사자에게는 `VolunteerCheckin`("오늘 참석합니다"/"참석 취소" 토글 버튼) |
 | `/profile` | 마이페이지: 이름 수정(`ProfileName`), 이메일 표시, 전체 멘티 목록 링크, "챙길 거 알림"(멘티별 학습 공백·출석 문제만 — 과목 편중/과목별 방치는 제외, `isMypageAlert` 참고), 내가 최근 작성한 일지 5건, 로그아웃 |
+| `/feedback` | 관리자 전용 피드백 목록(별점·의견·작성자·작성일, 최신순) — 관리자가 아니면 `notFound()`로 404. `TopNav`에도 admin에게만 "피드백함" 탭이 추가됨(아래 참고). 제출 UI는 이 라우트가 아니라 `FeedbackModal`(전역) |
 
 ### 상단 네비게이션과 알림
 
@@ -107,6 +108,15 @@ npx supabase migration repair --status applied <version>    # 예: 2026080807042
 - `volunteer_expiry` — 본인이 봉사자 역할이고 만료까지 7일 이하 남았을 때만(멘토/관리자에게는 안 뜸).
 
 `NotificationBell`(`src/components/notification-bell.tsx`)은 서버에서 계산된 알림 목록을 받아 드롭다운으로 보여주기만 하고, "읽음" 상태는 알림 id 집합을 `localStorage`(`saessak:seen-notification-ids`)에 저장해 클라이언트에서만 관리합니다 — 다른 기기/브라우저와는 동기화되지 않습니다.
+
+### 피드백함
+
+구글폼 대신 앱 안에서 직접 받는 피드백입니다. 제출 UI(`src/components/feedback-modal.tsx`, `FeedbackModal`)는 별점(1~5, 필수) + 자유 의견(선택) + "감사합니다" 완료 화면으로 된 오버레이 모달이고, 두 곳에서 열립니다:
+
+- **상시 진입점** — `TopNav` 우측의 하트말풍선 아이콘(`MessageSquareHeart`), 누구나 언제든 클릭. 메인 트리거로 골랐습니다: 강제로 끼어드는 팝업이 없어 부담이 없고, 구현도 제일 단순합니다.
+- **저장 후 가끔 뜨는 유도 팝업** — `/mentees/[menteeId]`에서 일지를 저장하면(`?saved=1`) `PostSaveFeedbackPrompt`가 1.2초 뒤 같은 모달을 자동으로 엽니다. 다만 매번 뜨면 금방 피곤해지므로 `localStorage`(`saessak:feedback-prompt-last-shown`)로 **최대 2주에 한 번만** 뜨도록 막았습니다(제출하든 닫든 쿨다운은 똑같이 갱신). `notification-bell.tsx`의 "읽음" 처리와 같은 클라이언트 전용 스로틀링 방식입니다.
+
+`submitFeedback`(`src/app/feedback/actions.ts`)은 `mentor_id = auth.uid()`로 작성자를 고정해서 insert만 하고 끝 — 응답에 작성한 내용을 다시 안 돌려줍니다(작성자 본인도 자기 피드백을 다시 못 보는 RLS와 UX를 맞춤). `/feedback`는 이 데이터를 읽을 수 있는 유일한 화면이고 관리자 전용입니다.
 
 ### 달력 UI 패턴 (react-day-picker)
 
@@ -152,7 +162,7 @@ Server Action의 기본 요청 본문 크기 제한(1MB)은 여러 장 업로드
 
 ## 데이터 모델 (`supabase/migrations/`)
 
-열여섯 개의 마이그레이션에 걸쳐 열 개의 테이블(+ Storage 버킷 1개)이 있습니다:
+열일곱 개의 마이그레이션에 걸쳐 열한 개의 테이블(+ Storage 버킷 1개)이 있습니다:
 
 1. `20260728121422_init_schema.sql` — `mentors`, `mentees`, `weekday_registrations`, `attendance`, `session_logs`.
 2. `20260728125543_tighten_rls_mentor_scope.sql` — RLS 허점을 막음 (역사적 기록 — 이후 12번 마이그레이션에서 멘토 범위 제한 자체가 다시 제거됩니다).
@@ -170,6 +180,7 @@ Server Action의 기본 요청 본문 크기 제한(1MB)은 여러 장 업로드
 14. `20260808100016_add_mentor_schedules.sql` — `mentor_schedules` 추가(멘토 본인의 반복 출근 요일/시간대).
 15. `20260808100019_add_volunteer_attendance.sql` — `volunteer_attendance` 추가(봉사자 본인의 당일 참석 체크).
 16. `20260809101044_add_mentee_delete_policy.sql` — 빠져 있던 `mentees` DELETE 정책 추가(8번 마이그레이션의 `attendance`와 같은 종류의 누락).
+17. `20260809103649_add_feedback.sql` — `feedback` 추가(구글폼 대신 앱 내부 피드백함, 아래 참고).
 
 ### 테이블
 
@@ -181,6 +192,7 @@ Server Action의 기본 요청 본문 크기 제한(1MB)은 여러 장 업로드
 - **`center_events`** — `title`, `event_type`(enum: `field_trip`/`camp`/`other`), `start_date`/`end_date`(여러 날에 걸친 범위, `end_date >= start_date` 체크), `location`, `description`(짧은 소개), `schedule`(`text`, 시간대별 일정을 JSON으로 인코딩 — 위 "행사 상세 일정" 참고), `photo_urls`(`text[]`, 기본값 `{}`, `event-photos` Storage 버킷의 공개 URL 목록 — 위 "센터 행사 사진" 참고), `created_by`(nullable, `on delete set null`, RLS에는 사용되지 않고 그냥 정보성).
 - **`mentor_schedules`** — 멘토 본인이 등록하는 반복 출근 일정. `mentor_id`, `day_of_week`(0=일~6=토, `classes.day_of_week`와 같은 컨벤션, `src/lib/weekday.ts`), `start_time`/`end_time`(`time`, `end_time > start_time` 체크). 한 멘토가 여러 요일/시간대를 여러 행으로 등록할 수 있습니다. 조회는 완전 공유, insert/update는 본인 행 + `current_mentor_role() <> 'volunteer'`만 가능(봉사자는 반복 스케줄 대신 아래 `volunteer_attendance`로 참여), delete는 본인 행이면 역할 무관하게 가능. `/today` 페이지에서 등록·조회.
 - **`volunteer_attendance`** — 봉사자 본인의 당일 참석 체크. `volunteer_id`, `attendance_date`(`date`), `(volunteer_id, attendance_date)` unique — 체크인은 insert, 취소는 그 행 delete로 표현(별도 상태 컬럼 없음). 조회는 완전 공유, insert는 본인 + `current_mentor_role() = 'volunteer'`만 가능, delete는 본인 행이면 가능. `/today` 페이지의 "오늘 참석합니다" 버튼. **`mentor_last_activity()`(봉사자 만료 판정)는 이 테이블을 보지 않습니다** — 여전히 `session_logs`/`attendance` 작성 시각만 봅니다. 즉 "오늘 참석" 체크만 하고 일지/출석을 하나도 안 쓰면 30일 만료 카운트다운은 그대로 진행됩니다.
+- **`feedback`** — 구글폼 대신 앱 안에서 직접 받는 피드백함. `mentor_id`, `rating`(`smallint`, 1~5 체크 제약), `comment`(nullable). INSERT는 로그인한 누구나 자기 행만(`mentor_id = auth.uid()`), SELECT는 `current_mentor_role() = 'admin'`뿐 — **작성자 본인도 자기가 쓴 피드백을 앱에서 다시 못 봅니다**(진짜 피드백함처럼 한 방향으로만 열림). UPDATE/DELETE 정책이 아예 없어 제출 후에는 아무도(관리자 포함) 수정·삭제할 수 없습니다. `/feedback`(관리자 전용 목록)과 `src/components/feedback-modal.tsx`(제출 UI) 참고.
 
 `weekday_registrations`는 더 이상 존재하지 않습니다 — 이전에는 "어느 멘토가 어느 멘티를 담당하는가"의 단일 진실 공급원이었지만, 이 센터는 담당제를 쓰지 않는 것으로 확인되어 12번 마이그레이션에서 테이블 자체와 `attendance.weekday_registration_id` FK 컬럼을 함께 삭제했습니다. 애플리케이션 코드 어디에서도 참조하지 않던 테이블이라(SQL 에디터로 수동 입력하는 용도 외에는 UI 없음) 다른 의미로 재활용하지 않고 정리했습니다.
 
