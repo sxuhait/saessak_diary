@@ -40,6 +40,7 @@ export function validateSignupInput(input: SignupInput): string | null {
 // 아동센터 관련자만 가입할 수 있도록 초대 코드 등 추가 제한을 걸 자리.
 // 지금은 이메일/비밀번호만으로 누구나 가입할 수 있도록 항상 통과시킨다.
 export async function checkSignupEligibility(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- signature kept ready for future eligibility checks
   _input: SignupInput,
 ): Promise<string | null> {
   return null;

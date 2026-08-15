@@ -12,20 +12,14 @@ export default async function MenteeAttendancePage({
 
   const supabase = await createClient();
 
-  const { data: mentee, error } = await supabase
-    .from("mentees")
-    .select("id, name, school, grade")
-    .eq("id", menteeId)
-    .maybeSingle();
+  const [{ data: mentee, error }, { data: attendance }] = await Promise.all([
+    supabase.from("mentees").select("id, name, school, grade").eq("id", menteeId).maybeSingle(),
+    supabase.from("attendance").select("id, session_date, status, reason").eq("mentee_id", menteeId),
+  ]);
 
   if (error || !mentee) {
     notFound();
   }
-
-  const { data: attendance } = await supabase
-    .from("attendance")
-    .select("id, session_date, status, reason")
-    .eq("mentee_id", menteeId);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { cardClassName } from "@/components/ui/card";
-import { fieldClass } from "@/components/ui/form";
+import { fieldClass, labelClass } from "@/components/ui/form";
 
 type MyLog = {
   id: string;
@@ -61,42 +61,57 @@ export function MyLogsList({ logs }: { logs: MyLog[] }) {
     <div className="flex flex-col gap-4">
       <div className={cardClassName}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-stone-400"
-              aria-hidden
-            />
-            <input
-              type="text"
-              value={menteeQuery}
-              onChange={(e) => setMenteeQuery(e.target.value)}
-              placeholder="멘티 이름 검색"
-              aria-label="멘티 이름 검색"
-              className={`${fieldClass} pl-10`}
-            />
+          <div>
+            <label htmlFor="log-mentee-search" className={labelClass}>
+              멘티 검색
+            </label>
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-stone-400"
+                aria-hidden
+              />
+              <input
+                id="log-mentee-search"
+                type="text"
+                value={menteeQuery}
+                onChange={(e) => setMenteeQuery(e.target.value)}
+                placeholder="멘티 이름 검색"
+                className={`${fieldClass} pl-10`}
+              />
+            </div>
           </div>
 
-          <select
-            value={subjectFilter}
-            onChange={(e) => setSubjectFilter(e.target.value)}
-            aria-label="과목 필터"
-            className={fieldClass}
-          >
-            <option value="">전체 과목</option>
-            {subjects.map((subject) => (
-              <option key={subject} value={subject}>
-                {subject}
-              </option>
-            ))}
-          </select>
+          <div>
+            <label htmlFor="log-subject-filter" className={labelClass}>
+              과목
+            </label>
+            <select
+              id="log-subject-filter"
+              value={subjectFilter}
+              onChange={(e) => setSubjectFilter(e.target.value)}
+              className={fieldClass}
+            >
+              <option value="">전체 과목</option>
+              {subjects.map((subject) => (
+                <option key={subject} value={subject}>
+                  {subject}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            aria-label="날짜 필터"
-            className={fieldClass}
-          />
+          <div>
+            <label htmlFor="log-date-filter" className={labelClass}>
+              날짜
+            </label>
+            <input
+              id="log-date-filter"
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className={fieldClass}
+            />
+          </div>
         </div>
 
         {hasFilters && (

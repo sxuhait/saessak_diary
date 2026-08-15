@@ -23,48 +23,48 @@ export default async function TodayPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: mentor } = await supabase
-    .from("mentors")
-    .select("role")
-    .eq("id", user?.id ?? "")
-    .maybeSingle();
-
-  const isVolunteer = mentor?.role === "volunteer";
-
   const today = new Date();
   const todayDayOfWeek = today.getDay();
   const todayIso = todayISODate(today);
 
-  const { data: todaySchedules } = await supabase
-    .from("mentor_schedules")
-    .select("id, start_time, end_time, mentors(name)")
-    .eq("day_of_week", todayDayOfWeek)
-    .order("start_time");
+  const [
+    { data: mentor },
+    { data: todaySchedules },
+    { data: weekSchedules },
+    { data: mySchedules },
+    { data: todayVolunteers },
+    { data: myCheckIn },
+  ] = await Promise.all([
+    supabase.from("mentors").select("role").eq("id", user?.id ?? "").maybeSingle(),
+    supabase
+      .from("mentor_schedules")
+      .select("id, start_time, end_time, mentors(name)")
+      .eq("day_of_week", todayDayOfWeek)
+      .order("start_time"),
+    supabase
+      .from("mentor_schedules")
+      .select("id, day_of_week, start_time, end_time, mentors(name)")
+      .order("day_of_week")
+      .order("start_time"),
+    supabase
+      .from("mentor_schedules")
+      .select("id, day_of_week, start_time, end_time")
+      .eq("mentor_id", user?.id ?? "")
+      .order("day_of_week")
+      .order("start_time"),
+    supabase
+      .from("volunteer_attendance")
+      .select("id, mentors(name)")
+      .eq("attendance_date", todayIso),
+    supabase
+      .from("volunteer_attendance")
+      .select("id")
+      .eq("volunteer_id", user?.id ?? "")
+      .eq("attendance_date", todayIso)
+      .maybeSingle(),
+  ]);
 
-  const { data: weekSchedules } = await supabase
-    .from("mentor_schedules")
-    .select("id, day_of_week, start_time, end_time, mentors(name)")
-    .order("day_of_week")
-    .order("start_time");
-
-  const { data: mySchedules } = await supabase
-    .from("mentor_schedules")
-    .select("id, day_of_week, start_time, end_time")
-    .eq("mentor_id", user?.id ?? "")
-    .order("day_of_week")
-    .order("start_time");
-
-  const { data: todayVolunteers } = await supabase
-    .from("volunteer_attendance")
-    .select("id, mentors(name)")
-    .eq("attendance_date", todayIso);
-
-  const { data: myCheckIn } = await supabase
-    .from("volunteer_attendance")
-    .select("id")
-    .eq("volunteer_id", user?.id ?? "")
-    .eq("attendance_date", todayIso)
-    .maybeSingle();
+  const isVolunteer = mentor?.role === "volunteer";
 
   const scheduleByDay = DAY_LABELS.map((label, dayOfWeek) => ({
     dayOfWeek,

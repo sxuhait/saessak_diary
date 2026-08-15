@@ -12,23 +12,26 @@ export default async function ClassesPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: mentor } = await supabase
-    .from("mentors")
-    .select("role")
-    .eq("id", user?.id ?? "")
-    .maybeSingle();
+  const [{ data: mentor }, { data: classRows, error }, { data: cancellations }] =
+    await Promise.all([
+      supabase.from("mentors").select("role").eq("id", user?.id ?? "").maybeSingle(),
+      supabase
+        .from("classes")
+        .select("id, name, teacher_name, description, color, class_days(day_of_week)")
+        .order("name"),
+      supabase.from("class_cancellations").select("id, class_id, cancelled_date"),
+    ]);
 
   const isAdmin = mentor?.role === "admin";
 
-  const { data: classes, error } = await supabase
-    .from("classes")
-    .select("id, name, day_of_week, teacher_name, description, color")
-    .order("day_of_week")
-    .order("name");
-
-  const { data: cancellations } = await supabase
-    .from("class_cancellations")
-    .select("id, class_id, cancelled_date");
+  const classes = (classRows ?? []).map((item) => ({
+    id: item.id,
+    name: item.name,
+    teacher_name: item.teacher_name,
+    description: item.description,
+    color: item.color,
+    days: item.class_days.map((d) => d.day_of_week).sort((a, b) => a - b),
+  }));
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
@@ -45,20 +48,17 @@ export default async function ClassesPage() {
         </p>
       )}
 
-      <ClassCalendar
-        classes={classes ?? []}
-        cancellations={cancellations ?? []}
-      />
+      <ClassCalendar classes={classes} cancellations={cancellations ?? []} />
 
       {isAdmin ? (
-        <NewClassForm defaultColor={suggestNextColor(classes?.length ?? 0)} />
+        <NewClassForm defaultColor={suggestNextColor(classes.length)} />
       ) : (
         <p className="rounded-2xl border border-stone-200 bg-white px-5 py-4 text-sm text-stone-500 shadow-sm">
           새 수업 추가·수정·삭제는 관리자만 할 수 있습니다.
         </p>
       )}
 
-      <ClassList classes={classes ?? []} isAdmin={isAdmin} />
+      <ClassList classes={classes} isAdmin={isAdmin} />
     </div>
   );
 }

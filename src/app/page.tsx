@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CalendarDays, CheckCircle2, Clock, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
-import { diagnoseLearning, type DiagnosticSeverity } from "@/lib/learning-diagnostics";
+import { getMenteeDiagnosticsData } from "@/lib/mentee-diagnostics-data";
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   month: "long",
@@ -37,10 +37,24 @@ function getWeekRange(today: Date) {
   return { start: toISODate(monday), end: toISODate(sunday) };
 }
 
-const TASK_BADGE_STYLES: Record<DiagnosticSeverity, string> = {
+function daysBetween(fromIso: string, toDate: Date) {
+  const from = parseLocalDate(fromIso);
+  const toMidnight = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+  return Math.round((toMidnight.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+// Same 14일/28일 warning/critical split as the "최근 N일간 학습 일지가 없습니다"
+// finding in learning-diagnostics.ts, kept local since that module doesn't
+// export its thresholds -- this card ranks by staleness rather than running
+// the full rule set, but the color coding should still feel consistent.
+const STALE_WARN_DAYS = 14;
+const STALE_CRITICAL_DAYS = 28;
+
+const TASK_BADGE_STYLES = {
+  never: "bg-red-100 text-red-700",
   critical: "bg-red-100 text-red-700",
   warning: "bg-amber-100 text-amber-700",
-  info: "bg-emerald-100 text-emerald-700",
+  ok: "bg-emerald-100 text-emerald-700",
 };
 
 export default async function HomePage() {
@@ -50,91 +64,71 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: mentor } = await supabase
-    .from("mentors")
-    .select("name")
-    .eq("id", user?.id ?? "")
-    .maybeSingle();
-
-  const { data: mentees } = await supabase
-    .from("mentees")
-    .select("id, name")
-    .order("name");
-  const menteeIds = (mentees ?? []).map((mentee) => mentee.id);
-
-  const { data: logRows } = menteeIds.length
-    ? await supabase
-        .from("session_logs")
-        .select("mentee_id, session_date, subject")
-        .in("mentee_id", menteeIds)
-    : { data: [] };
-
-  const { data: attendanceRows } = menteeIds.length
-    ? await supabase
-        .from("attendance")
-        .select("mentee_id, session_date, status")
-        .in("mentee_id", menteeIds)
-    : { data: [] };
-
-  const { data: events, error: eventsError } = await supabase
-    .from("center_events")
-    .select("id, title, start_date, location")
-    .gte("end_date", toISODate(new Date()))
-    .order("start_date")
-    .limit(3);
-
   const today = new Date();
   const todayIso = toISODate(today);
   const todayDayOfWeek = today.getDay();
   const { start: weekStart, end: weekEnd } = getWeekRange(today);
 
-  const { count: todayScheduleCount } = await supabase
-    .from("mentor_schedules")
-    .select("*", { count: "exact", head: true })
-    .eq("day_of_week", todayDayOfWeek);
+  const [
+    { data: mentor },
+    { mentees, logsByMentee, attendanceByMentee },
+    { data: events, error: eventsError },
+    { count: todayScheduleCount },
+    { count: todayVolunteerCount },
+  ] = await Promise.all([
+    supabase.from("mentors").select("name").eq("id", user?.id ?? "").maybeSingle(),
+    getMenteeDiagnosticsData(),
+    supabase
+      .from("center_events")
+      .select("id, title, start_date, location")
+      .gte("end_date", toISODate(new Date()))
+      .order("start_date")
+      .limit(3),
+    supabase
+      .from("mentor_schedules")
+      .select("*", { count: "exact", head: true })
+      .eq("day_of_week", todayDayOfWeek),
+    supabase
+      .from("volunteer_attendance")
+      .select("*", { count: "exact", head: true })
+      .eq("attendance_date", todayIso),
+  ]);
 
-  const { count: todayVolunteerCount } = await supabase
-    .from("volunteer_attendance")
-    .select("*", { count: "exact", head: true })
-    .eq("attendance_date", todayIso);
-
-  const logsByMentee = new Map<
-    string,
-    { session_date: string; subject: string | null }[]
-  >();
-  for (const log of logRows ?? []) {
-    const list = logsByMentee.get(log.mentee_id) ?? [];
-    list.push({ session_date: log.session_date, subject: log.subject });
-    logsByMentee.set(log.mentee_id, list);
-  }
-
-  const attendanceByMentee = new Map<
-    string,
-    { session_date: string; status: "present" | "absent" | "late" | "excused" }[]
-  >();
-  for (const record of attendanceRows ?? []) {
-    const list = attendanceByMentee.get(record.mentee_id) ?? [];
-    list.push({ session_date: record.session_date, status: record.status });
-    attendanceByMentee.set(record.mentee_id, list);
-  }
-
-  const tasks = (mentees ?? [])
-    .flatMap((mentee) =>
-      diagnoseLearning({
-        logs: logsByMentee.get(mentee.id) ?? [],
-        attendance: attendanceByMentee.get(mentee.id) ?? [],
-      })
-        .filter((finding) => finding.severity !== "info")
-        .map((finding) => ({ mentee, finding })),
-    )
+  const tasks = mentees
+    .map((mentee) => {
+      const logs = logsByMentee.get(mentee.id) ?? [];
+      const lastLogDate = logs.length
+        ? logs.reduce(
+            (latest, log) => (log.session_date > latest ? log.session_date : latest),
+            logs[0].session_date,
+          )
+        : null;
+      const daysSince = lastLogDate ? daysBetween(lastLogDate, today) : null;
+      const urgency: keyof typeof TASK_BADGE_STYLES =
+        daysSince === null
+          ? "never"
+          : daysSince >= STALE_CRITICAL_DAYS
+            ? "critical"
+            : daysSince >= STALE_WARN_DAYS
+              ? "warning"
+              : "ok";
+      return { mentee, lastLogDate, daysSince, urgency };
+    })
+    // 일지가 없으면 lastLogDate가 null -- 항상 가장 오래된 것으로 취급해 맨 앞으로.
+    .sort((a, b) => {
+      if (a.lastLogDate === b.lastLogDate) return 0;
+      if (a.lastLogDate === null) return -1;
+      if (b.lastLogDate === null) return 1;
+      return a.lastLogDate < b.lastLogDate ? -1 : 1;
+    })
     .slice(0, 5);
 
-  const weekLogCount = (logRows ?? []).filter(
-    (log) => log.session_date >= weekStart && log.session_date <= weekEnd,
-  ).length;
-  const weekAttendanceCount = (attendanceRows ?? []).filter(
-    (record) => record.session_date >= weekStart && record.session_date <= weekEnd,
-  ).length;
+  const weekLogCount = Array.from(logsByMentee.values())
+    .flat()
+    .filter((log) => log.session_date >= weekStart && log.session_date <= weekEnd).length;
+  const weekAttendanceCount = Array.from(attendanceByMentee.values())
+    .flat()
+    .filter((record) => record.session_date >= weekStart && record.session_date <= weekEnd).length;
 
   const greetingName = mentor?.name?.trim();
   const greeting = greetingName?.includes("@")
@@ -178,24 +172,30 @@ export default async function HomePage() {
             {tasks.length === 0 ? (
               <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                 <p className="text-sm font-medium text-emerald-700">
-                  챙길 특이사항이 없습니다. 오늘도 좋은 하루 보내세요!
+                  등록된 멘티가 없습니다.
                 </p>
               </div>
             ) : (
               <ul className="mt-4 flex flex-col gap-2">
-                {tasks.map(({ mentee, finding }) => (
-                  <li key={`${mentee.id}-${finding.id}`}>
+                {tasks.map(({ mentee, daysSince, urgency }) => (
+                  <li key={mentee.id}>
                     <Link
                       href={`/mentees/${mentee.id}`}
                       className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 p-3 hover:border-emerald-300 hover:bg-emerald-50"
                     >
                       <span className="flex items-center gap-2.5">
                         <span
-                          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${TASK_BADGE_STYLES[finding.severity]}`}
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${TASK_BADGE_STYLES[urgency]}`}
                         >
                           {mentee.name}
                         </span>
-                        <span className="text-sm text-stone-900">{finding.title}</span>
+                        <span className="text-sm text-stone-900">
+                          {daysSince === null
+                            ? "작성된 일지 없음"
+                            : daysSince <= 0
+                              ? "오늘 일지 작성함"
+                              : `마지막 일지 ${daysSince}일 전`}
+                        </span>
                       </span>
                       <span className="shrink-0 text-xs text-emerald-700">일지 쓰기 →</span>
                     </Link>
@@ -265,7 +265,7 @@ export default async function HomePage() {
             <p className="mt-1 text-xs text-stone-500">이번 주 출석 체크</p>
           </div>
           <div className="rounded-xl bg-stone-50 p-4 text-center">
-            <p className="text-3xl font-bold text-stone-900">{mentees?.length ?? 0}</p>
+            <p className="text-3xl font-bold text-stone-900">{mentees.length}</p>
             <p className="mt-1 text-xs text-stone-500">전체 멘티</p>
           </div>
           <div className="flex flex-col items-center justify-center rounded-xl bg-amber-50 p-4 text-center">

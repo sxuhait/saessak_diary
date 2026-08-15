@@ -5,15 +5,13 @@ import { HistoryCalendar } from "./history-calendar";
 export default async function HistoryPage() {
   const supabase = await createClient();
 
-  const { data: logRows, error } = await supabase
-    .from("session_logs")
-    .select("id, session_date, subject, progress, content, mentee_id, mentees(name)")
-    .order("session_date", { ascending: false });
-
-  const { data: mentees } = await supabase
-    .from("mentees")
-    .select("id, name")
-    .order("name");
+  const [{ data: logRows, error }, { data: mentees }] = await Promise.all([
+    supabase
+      .from("session_logs")
+      .select("id, session_date, subject, progress, content, mentee_id, mentees(name)")
+      .order("session_date", { ascending: false }),
+    supabase.from("mentees").select("id, name").order("name"),
+  ]);
 
   const logs = (logRows ?? []).map((log) => ({
     id: log.id,

@@ -10,14 +10,14 @@ type EnrolledClass = {
   enrollmentId: string;
   classId: string;
   name: string;
-  dayOfWeek: number;
+  days: number[];
   teacherName: string | null;
 };
 
 type AvailableClass = {
   id: string;
   name: string;
-  day_of_week: number;
+  days: number[];
   teacher_name: string | null;
 };
 
@@ -77,7 +77,7 @@ export function ClassEnrollments({
               className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700"
             >
               <span>
-                {DAY_LABELS[item.dayOfWeek]} · {item.name}
+                {item.days.map((day) => DAY_LABELS[day]).join("·")} · {item.name}
                 {item.teacherName ? ` (${item.teacherName})` : ""}
               </span>
               <button
@@ -104,7 +104,7 @@ export function ClassEnrollments({
             <option value="">수업 선택...</option>
             {availableClasses.map((item) => (
               <option key={item.id} value={item.id}>
-                {DAY_LABELS[item.day_of_week]} · {item.name}
+                {item.days.map((day) => DAY_LABELS[day]).join("·")} · {item.name}
               </option>
             ))}
           </select>

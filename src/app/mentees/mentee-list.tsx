@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/form";
 import { deleteMentee, updateMenteeName } from "./actions";
 import { NewMenteeForm } from "./new-mentee-form";
+import { useShowMore } from "@/lib/use-show-more";
+
+const PAGE_SIZE = 10;
 
 type Mentee = {
   id: string;
@@ -175,6 +178,19 @@ export function MenteeList({
     return mentees.filter((mentee) => mentee.name.toLowerCase().includes(trimmed));
   }, [mentees, query]);
 
+  const {
+    visibleItems: visibleMentees,
+    hasMore,
+    remaining,
+    showMore,
+    reset: resetVisibleCount,
+  } = useShowMore(filtered, PAGE_SIZE);
+
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    resetVisibleCount();
+  }
+
   async function handleDelete(mentee: Mentee) {
     if (
       !confirm(
@@ -202,7 +218,7 @@ export function MenteeList({
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => handleQueryChange(e.target.value)}
           placeholder="이름으로 검색"
           aria-label="학생 이름 검색"
           className={`${fieldClass} pl-10`}
@@ -219,7 +235,7 @@ export function MenteeList({
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((mentee) => (
+          {visibleMentees.map((mentee) => (
             <MenteeCard
               key={mentee.id}
               mentee={mentee}
@@ -259,6 +275,16 @@ export function MenteeList({
             </button>
           )}
         </div>
+      )}
+
+      {hasMore && (
+        <button
+          type="button"
+          onClick={showMore}
+          className="w-full rounded-2xl border border-stone-200 bg-white py-3 text-sm font-medium text-stone-600 shadow-soft hover:bg-stone-50"
+        >
+          더보기 ({remaining}명 더)
+        </button>
       )}
     </div>
   );

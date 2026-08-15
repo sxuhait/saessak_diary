@@ -84,7 +84,7 @@ export function MentorScheduleManager({
         action={formAction}
         className="flex flex-col gap-3 border-t border-stone-100 pt-4"
       >
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <div>
             <label htmlFor="day_of_week" className={labelClass}>
               요일

@@ -1,12 +1,21 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import type { Enums } from "@/lib/database.types";
 
 export type FeedbackActionState = { error?: string };
 
+export type FeedbackUsefulFeature = Enums<"feedback_useful_feature">;
+
+export type SubmitFeedbackInput = {
+  rating: number;
+  comment: string;
+  usefulFeature: FeedbackUsefulFeature | null;
+  painPoint: string;
+};
+
 export async function submitFeedback(
-  rating: number,
-  comment: string,
+  input: SubmitFeedbackInput,
 ): Promise<FeedbackActionState> {
   const supabase = await createClient();
 
@@ -18,16 +27,16 @@ export async function submitFeedback(
     return { error: "로그인이 필요합니다." };
   }
 
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
     return { error: "별점을 선택해주세요." };
   }
 
-  const trimmedComment = comment.trim();
-
   const { error } = await supabase.from("feedback").insert({
     mentor_id: user.id,
-    rating,
-    comment: trimmedComment || null,
+    rating: input.rating,
+    comment: input.comment.trim() || null,
+    useful_feature: input.usefulFeature,
+    pain_point: input.painPoint.trim() || null,
   });
 
   if (error) {

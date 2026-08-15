@@ -2,14 +2,43 @@
 
 import { useState } from "react";
 import { Sprout, Star, X } from "lucide-react";
-import {
-  fieldClass,
-  primaryButtonClass,
-  secondaryButtonClass,
-} from "@/components/ui/form";
-import { submitFeedback } from "@/app/feedback/actions";
+import { fieldClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/form";
+import { submitFeedback, type FeedbackUsefulFeature } from "@/app/feedback/actions";
 
 const RATING_VALUES = [1, 2, 3, 4, 5];
+
+const USEFUL_FEATURE_OPTIONS: { value: FeedbackUsefulFeature; label: string }[] = [
+  { value: "session_log", label: "일지 작성" },
+  { value: "diagnostics", label: "학습 진단" },
+  { value: "attendance", label: "출석 체크" },
+  { value: "schedule", label: "시간표" },
+  { value: "other", label: "기타" },
+];
+
+function ChipButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+        active
+          ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+          : "border-stone-300 text-stone-600 hover:bg-stone-50"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
 
 export function FeedbackModal({
   open,
@@ -25,6 +54,8 @@ export function FeedbackModal({
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [usefulFeature, setUsefulFeature] = useState<FeedbackUsefulFeature | null>(null);
+  const [painPoint, setPainPoint] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -39,6 +70,8 @@ export function FeedbackModal({
     setRating(0);
     setHoverRating(0);
     setComment("");
+    setUsefulFeature(null);
+    setPainPoint("");
     setError(null);
     setSubmitted(false);
     setPending(false);
@@ -51,7 +84,12 @@ export function FeedbackModal({
     }
     setPending(true);
     setError(null);
-    const result = await submitFeedback(rating, comment);
+    const result = await submitFeedback({
+      rating,
+      comment,
+      usefulFeature,
+      painPoint,
+    });
     setPending(false);
     if (result.error) {
       setError(result.error);
@@ -70,7 +108,7 @@ export function FeedbackModal({
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl"
+        className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-3xl bg-white p-6 shadow-xl"
       >
         {submitted ? (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
@@ -133,16 +171,45 @@ export function FeedbackModal({
               })}
             </div>
 
+            <div className="mt-4">
+              <p className="mb-1.5 text-xs font-medium text-stone-500">
+                가장 유용했던 기능 (선택)
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {USEFUL_FEATURE_OPTIONS.map((option) => (
+                  <ChipButton
+                    key={option.value}
+                    label={option.label}
+                    active={usefulFeature === option.value}
+                    onClick={() =>
+                      setUsefulFeature((current) =>
+                        current === option.value ? null : option.value,
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              rows={3}
+              rows={2}
               placeholder="자유롭게 의견을 남겨주세요 (선택)"
               aria-label="의견"
               className={`mt-4 ${fieldClass}`}
             />
 
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            <input
+              type="text"
+              value={painPoint}
+              onChange={(e) => setPainPoint(e.target.value)}
+              placeholder="불편했거나 아쉬웠던 점 (선택)"
+              aria-label="불편했거나 아쉬웠던 점"
+              className={`mt-3 ${fieldClass}`}
+            />
+
+            {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
             <div className="mt-4 flex justify-end gap-2">
               <button

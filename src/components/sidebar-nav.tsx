@@ -52,7 +52,7 @@ export function SidebarNav({ isAdmin = false }: { isAdmin?: boolean }) {
           <span className="font-heading text-lg font-extrabold tracking-tight text-stone-900">
             새싹일기
           </span>
-          <span className="text-xs text-stone-500">지역아동센터</span>
+          <span className="text-xs text-stone-500">온새미로지역아동센터</span>
         </span>
       </Link>
 

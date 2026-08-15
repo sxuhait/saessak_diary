@@ -166,6 +166,35 @@ export type Database = {
           },
         ]
       }
+      class_days: {
+        Row: {
+          class_id: string
+          created_at: string
+          day_of_week: number
+          id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          day_of_week: number
+          id?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          day_of_week?: number
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_days_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_enrollments: {
         Row: {
           class_id: string
@@ -206,7 +235,6 @@ export type Database = {
         Row: {
           color: Database["public"]["Enums"]["class_color"]
           created_at: string
-          day_of_week: number
           description: string | null
           id: string
           name: string
@@ -216,7 +244,6 @@ export type Database = {
         Insert: {
           color?: Database["public"]["Enums"]["class_color"]
           created_at?: string
-          day_of_week: number
           description?: string | null
           id?: string
           name: string
@@ -226,7 +253,6 @@ export type Database = {
         Update: {
           color?: Database["public"]["Enums"]["class_color"]
           created_at?: string
-          day_of_week?: number
           description?: string | null
           id?: string
           name?: string
@@ -241,21 +267,33 @@ export type Database = {
           created_at: string
           id: string
           mentor_id: string
+          pain_point: string | null
           rating: number
+          useful_feature:
+            | Database["public"]["Enums"]["feedback_useful_feature"]
+            | null
         }
         Insert: {
           comment?: string | null
           created_at?: string
           id?: string
           mentor_id: string
+          pain_point?: string | null
           rating: number
+          useful_feature?:
+            | Database["public"]["Enums"]["feedback_useful_feature"]
+            | null
         }
         Update: {
           comment?: string | null
           created_at?: string
           id?: string
           mentor_id?: string
+          pain_point?: string | null
           rating?: number
+          useful_feature?:
+            | Database["public"]["Enums"]["feedback_useful_feature"]
+            | null
         }
         Relationships: [
           {
@@ -359,6 +397,42 @@ export type Database = {
           phone?: string | null
           reactivated_at?: string | null
           role?: Database["public"]["Enums"]["mentor_role"]
+        }
+        Relationships: []
+      }
+      schedule_items: {
+        Row: {
+          color: Database["public"]["Enums"]["class_color"]
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          start_time: string
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          color?: Database["public"]["Enums"]["class_color"]
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          start_time: string
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          color?: Database["public"]["Enums"]["class_color"]
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          start_time?: string
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -477,6 +551,12 @@ export type Database = {
         | "indigo"
         | "teal"
         | "cyan"
+      feedback_useful_feature:
+        | "session_log"
+        | "diagnostics"
+        | "attendance"
+        | "schedule"
+        | "other"
       mentor_role: "mentor" | "volunteer" | "admin"
     }
     CompositeTypes: {
@@ -619,6 +699,13 @@ export const Constants = {
         "indigo",
         "teal",
         "cyan",
+      ],
+      feedback_useful_feature: [
+        "session_log",
+        "diagnostics",
+        "attendance",
+        "schedule",
+        "other",
       ],
       mentor_role: ["mentor", "volunteer", "admin"],
     },

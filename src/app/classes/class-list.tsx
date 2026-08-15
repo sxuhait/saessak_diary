@@ -13,11 +13,12 @@ import {
   textDangerActionClass,
 } from "@/components/ui/form";
 import { deleteClass, updateClass } from "./actions";
+import { DayOfWeekCheckboxes } from "./day-of-week-checkboxes";
 
 type ClassItem = {
   id: string;
   name: string;
-  day_of_week: number;
+  days: number[];
   teacher_name: string | null;
   description: string | null;
   color: ClassColor;
@@ -66,23 +67,7 @@ function EditClassForm({
         />
       </div>
 
-      <div>
-        <label htmlFor={`day-${item.id}`} className={labelClass}>
-          요일
-        </label>
-        <select
-          id={`day-${item.id}`}
-          name="day_of_week"
-          defaultValue={item.day_of_week}
-          className={`${fieldClass} bg-white`}
-        >
-          {DAY_LABELS.map((label, index) => (
-            <option key={label} value={index}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <DayOfWeekCheckboxes idPrefix={`edit-class-${item.id}`} defaultValues={item.days} />
 
       <div>
         <label className={labelClass}>색</label>
@@ -165,7 +150,7 @@ export function ClassList({
   const byDay = DAY_LABELS.map((label, dayOfWeek) => ({
     dayOfWeek,
     label,
-    items: classes.filter((item) => item.day_of_week === dayOfWeek),
+    items: classes.filter((item) => item.days.includes(dayOfWeek)),
   })).filter((group) => group.items.length > 0);
 
   return (
@@ -207,6 +192,11 @@ export function ClassList({
                         className={`h-2.5 w-2.5 shrink-0 rounded-full ${CLASS_COLOR_DOT_CLASS[item.color]}`}
                       />
                       {item.name}
+                      {item.days.length > 1 && (
+                        <span className="text-xs font-normal text-stone-400">
+                          ({item.days.map((day) => DAY_LABELS[day]).join("·")})
+                        </span>
+                      )}
                     </span>
                     {item.teacher_name && (
                       <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">

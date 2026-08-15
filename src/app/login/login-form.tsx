@@ -34,6 +34,19 @@ export function LoginForm({ notice }: { notice?: string }) {
         </p>
       )}
 
+      {notice === "password-updated" && (
+        <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요.
+        </p>
+      )}
+
+      {notice === "reset-link-invalid" && (
+        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+          재설정 링크가 만료되었거나 유효하지 않습니다. 아래에서 다시
+          요청해주세요.
+        </p>
+      )}
+
       <div>
         <label htmlFor="email" className={labelClass}>
           이메일
@@ -49,9 +62,17 @@ export function LoginForm({ notice }: { notice?: string }) {
       </div>
 
       <div>
-        <label htmlFor="password" className={labelClass}>
-          비밀번호
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor="password" className={labelClass}>
+            비밀번호
+          </label>
+          <Link
+            href="/forgot-password"
+            className="mb-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700"
+          >
+            비밀번호를 잊으셨나요?
+          </Link>
+        </div>
         <input
           id="password"
           name="password"

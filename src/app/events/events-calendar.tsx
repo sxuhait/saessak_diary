@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { DayPicker } from "react-day-picker";
 import { ko } from "react-day-picker/locale";
 import "react-day-picker/style.css";
@@ -172,11 +173,13 @@ export function EventsCalendar({ events }: { events: CenterEvent[] }) {
                                 key={url}
                                 className="relative h-10 w-10 overflow-hidden rounded-md border border-stone-200 bg-stone-100"
                               >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
+                                <Image
                                   src={url}
                                   alt=""
-                                  className="h-full w-full object-cover"
+                                  fill
+                                  sizes="40px"
+                                  className="object-cover"
+                                  unoptimized={url.toLowerCase().endsWith(".gif")}
                                 />
                                 {isLastVisible && remaining > 0 && (
                                   <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[10px] font-medium text-white">

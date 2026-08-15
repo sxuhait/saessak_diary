@@ -1,34 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
-import { parseSchedule, sortScheduleItems } from "@/lib/event-schedule";
-import { WeeklyScheduleGrid, type ScheduleBlock } from "./weekly-schedule-grid";
+import { cardClassName } from "@/components/ui/card";
+import { ScheduleTable } from "./schedule-table";
+import { ScheduleManageList } from "./schedule-manage-list";
+import { NewScheduleItemForm } from "./new-schedule-item-form";
 
-function toISODate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function fromISODate(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function getWeekdayRange(today: Date) {
-  const dayOfWeek = today.getDay(); // 0 = Sun .. 6 = Sat
-  const daysSinceMonday = (dayOfWeek + 6) % 7;
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - daysSinceMonday);
-  const friday = new Date(monday);
-  friday.setDate(monday.getDate() + 4);
-  return { monday, friday };
-}
-
-const weekHeaderFormatter = new Intl.DateTimeFormat("ko-KR", {
-  month: "long",
-  day: "numeric",
-});
+const NOTES = [
+  "7월 21일 한글우체부 지역탐방프로그램",
+  "8월 5일 청소년 수련원 생존수영활동",
+  "8월 6일~7일 강화도 1박2일 여름캠프",
+  "8월 14일 만월복지관과 함께 하는 나눔교육",
+  "매주 목요일 문화다양성교실",
+];
 
 export default async function SchedulePage() {
   const supabase = await createClient();
@@ -37,61 +20,16 @@ export default async function SchedulePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { monday, friday } = getWeekdayRange(new Date());
-  const mondayIso = toISODate(monday);
-  const fridayIso = toISODate(friday);
+  const [{ data: mentor }, { data: items, error }] = await Promise.all([
+    supabase.from("mentors").select("role").eq("id", user?.id ?? "").maybeSingle(),
+    supabase
+      .from("schedule_items")
+      .select("id, day_of_week, start_time, end_time, title, subtitle, color")
+      .order("day_of_week")
+      .order("start_time"),
+  ]);
 
-  const { data: mentorSchedules } = await supabase
-    .from("mentor_schedules")
-    .select("id, mentor_id, day_of_week, start_time, end_time, mentors(name)")
-    .gte("day_of_week", 1)
-    .lte("day_of_week", 5);
-
-  const { data: events } = await supabase
-    .from("center_events")
-    .select("id, title, event_type, start_date, end_date, location, schedule")
-    .lte("start_date", fridayIso)
-    .gte("end_date", mondayIso);
-
-  const blocks: ScheduleBlock[] = [];
-
-  for (const item of mentorSchedules ?? []) {
-    blocks.push({
-      id: `mentor-${item.id}`,
-      dayOfWeek: item.day_of_week,
-      startTime: item.start_time,
-      endTime: item.end_time,
-      category: "mentoring",
-      title: "1:1 멘토링",
-      subtitle: item.mentors?.name ? `멘토: ${item.mentors.name}` : null,
-      mentorId: item.mentor_id,
-    });
-  }
-
-  for (const event of events ?? []) {
-    const scheduleItems = sortScheduleItems(parseSchedule(event.schedule));
-    const anchorTime = scheduleItems.find((entry) => entry.time)?.time ?? "09:00";
-
-    for (
-      let cursor = new Date(Math.max(fromISODate(event.start_date).getTime(), monday.getTime()));
-      cursor.getTime() <= Math.min(fromISODate(event.end_date).getTime(), friday.getTime());
-      cursor.setDate(cursor.getDate() + 1)
-    ) {
-      const dayOfWeek = cursor.getDay();
-      if (dayOfWeek < 1 || dayOfWeek > 5) continue;
-
-      blocks.push({
-        id: `event-${event.id}-${toISODate(cursor)}`,
-        dayOfWeek,
-        startTime: anchorTime,
-        endTime: null,
-        category: event.event_type,
-        title: event.title,
-        subtitle: event.location,
-        mentorId: null,
-      });
-    }
-  }
+  const isAdmin = mentor?.role === "admin";
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
@@ -99,10 +37,39 @@ export default async function SchedulePage() {
         backHref="/"
         backLabel="홈으로"
         title="센터 주간 시간표"
-        description={`${weekHeaderFormatter.format(monday)} - ${weekHeaderFormatter.format(friday)} · 운영시간 09:00~20:00`}
+        description="운영시간 08:00~20:00 (월~금)"
       />
 
-      <WeeklyScheduleGrid blocks={blocks} currentUserId={user?.id} />
+      {error && (
+        <p className="text-sm text-red-600">
+          시간표를 불러오지 못했습니다: {error.message}
+        </p>
+      )}
+
+      <ScheduleTable items={items ?? []} />
+
+      {isAdmin ? (
+        <>
+          <NewScheduleItemForm />
+          <ScheduleManageList items={items ?? []} isAdmin={isAdmin} />
+        </>
+      ) : (
+        <p className="rounded-2xl border border-stone-200 bg-white px-5 py-4 text-sm text-stone-500 shadow-sm">
+          시간표 항목 추가·수정·삭제는 관리자만 할 수 있습니다.
+        </p>
+      )}
+
+      <div className={cardClassName}>
+        <h2 className="text-sm font-semibold text-stone-900">안내사항</h2>
+        <ul className="mt-2 flex flex-col gap-1 text-sm text-stone-600">
+          {NOTES.map((note) => (
+            <li key={note} className="flex gap-2">
+              <span className="text-emerald-600">•</span>
+              {note}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

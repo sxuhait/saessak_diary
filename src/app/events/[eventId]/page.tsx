@@ -16,21 +16,18 @@ export default async function EventDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: mentor } = await supabase
-    .from("mentors")
-    .select("role")
-    .eq("id", user?.id ?? "")
-    .maybeSingle();
+  const [{ data: mentor }, { data: event, error }] = await Promise.all([
+    supabase.from("mentors").select("role").eq("id", user?.id ?? "").maybeSingle(),
+    supabase
+      .from("center_events")
+      .select(
+        "id, title, event_type, start_date, end_date, location, description, schedule, photo_urls",
+      )
+      .eq("id", eventId)
+      .maybeSingle(),
+  ]);
 
   const isAdmin = mentor?.role === "admin";
-
-  const { data: event, error } = await supabase
-    .from("center_events")
-    .select(
-      "id, title, event_type, start_date, end_date, location, description, schedule, photo_urls",
-    )
-    .eq("id", eventId)
-    .maybeSingle();
 
   if (error || !event) {
     notFound();

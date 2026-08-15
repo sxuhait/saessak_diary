@@ -1,12 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
-import { DAY_LABELS } from "@/lib/weekday";
 import { ColorPicker } from "@/components/color-picker";
 import { cardClassName } from "@/components/ui/card";
 import { labelClass, fieldClass, primaryButtonClass } from "@/components/ui/form";
 import type { ClassColor } from "@/lib/class-colors";
 import { createClass, type ClassActionState } from "./actions";
+import { DayOfWeekCheckboxes } from "./day-of-week-checkboxes";
 
 const initialState: ClassActionState = {};
 
@@ -34,23 +34,7 @@ export function NewClassForm({ defaultColor }: { defaultColor: ClassColor }) {
         />
       </div>
 
-      <div>
-        <label htmlFor="day_of_week" className={labelClass}>
-          요일
-        </label>
-        <select
-          id="day_of_week"
-          name="day_of_week"
-          defaultValue="3"
-          className={fieldClass}
-        >
-          {DAY_LABELS.map((label, index) => (
-            <option key={label} value={index}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <DayOfWeekCheckboxes idPrefix="new-class" />
 
       <div>
         <label className={labelClass}>색</label>

@@ -1,14 +1,13 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import {
-  diagnoseLearning,
-  type DiagnosticSeverity,
-} from "@/lib/learning-diagnostics";
+import { diagnoseLearning } from "@/lib/learning-diagnostics";
+import { getMenteeDiagnosticsData } from "@/lib/mentee-diagnostics-data";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { secondaryButtonClass } from "@/components/ui/form";
 import { logout } from "../actions";
 import { ProfileName } from "./profile-name";
+import { MenteeListPreview } from "./mentee-list-preview";
+import { AlertListPreview } from "./alert-list-preview";
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
@@ -32,21 +31,6 @@ function isMypageAlert(findingId: string) {
   );
 }
 
-const ALERT_STYLES: Record<DiagnosticSeverity, { card: string; badge: string }> = {
-  critical: {
-    card: "border-red-200 bg-red-50",
-    badge: "bg-red-100 text-red-700",
-  },
-  warning: {
-    card: "border-amber-200 bg-amber-50",
-    badge: "bg-amber-100 text-amber-700",
-  },
-  info: {
-    card: "border-emerald-200 bg-emerald-50",
-    badge: "bg-emerald-100 text-emerald-700",
-  },
-};
-
 export default async function ProfilePage() {
   const supabase = await createClient();
 
@@ -54,62 +38,20 @@ export default async function ProfilePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: mentor } = await supabase
-    .from("mentors")
-    .select("name")
-    .eq("id", user?.id ?? "")
-    .maybeSingle();
-
-  const { data: mentees } = await supabase
-    .from("mentees")
-    .select("id, name")
-    .order("name");
-
-  const menteeIds = (mentees ?? []).map((mentee) => mentee.id);
-
-  const { data: logsForDiagnostics } = menteeIds.length
-    ? await supabase
+  const [{ data: mentor }, { mentees, logsByMentee, attendanceByMentee }, { data: recentLogs }] =
+    await Promise.all([
+      supabase.from("mentors").select("name").eq("id", user?.id ?? "").maybeSingle(),
+      getMenteeDiagnosticsData(),
+      supabase
         .from("session_logs")
-        .select("mentee_id, session_date, subject")
-        .in("mentee_id", menteeIds)
-    : { data: [] };
+        .select("id, session_date, subject, mentees(name)")
+        .eq("mentor_id", user?.id ?? "")
+        .order("session_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(5),
+    ]);
 
-  const { data: attendanceForDiagnostics } = menteeIds.length
-    ? await supabase
-        .from("attendance")
-        .select("mentee_id, session_date, status")
-        .in("mentee_id", menteeIds)
-    : { data: [] };
-
-  const { data: recentLogs } = await supabase
-    .from("session_logs")
-    .select("id, session_date, subject, mentees(name)")
-    .eq("mentor_id", user?.id ?? "")
-    .order("session_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  const logsByMentee = new Map<
-    string,
-    { session_date: string; subject: string | null }[]
-  >();
-  for (const log of logsForDiagnostics ?? []) {
-    const list = logsByMentee.get(log.mentee_id) ?? [];
-    list.push({ session_date: log.session_date, subject: log.subject });
-    logsByMentee.set(log.mentee_id, list);
-  }
-
-  const attendanceByMentee = new Map<
-    string,
-    { session_date: string; status: "present" | "absent" | "late" | "excused" }[]
-  >();
-  for (const record of attendanceForDiagnostics ?? []) {
-    const list = attendanceByMentee.get(record.mentee_id) ?? [];
-    list.push({ session_date: record.session_date, status: record.status });
-    attendanceByMentee.set(record.mentee_id, list);
-  }
-
-  const alerts = (mentees ?? []).flatMap((mentee) =>
+  const alerts = mentees.flatMap((mentee) =>
     diagnoseLearning({
       logs: logsByMentee.get(mentee.id) ?? [],
       attendance: attendanceByMentee.get(mentee.id) ?? [],
@@ -140,22 +82,11 @@ export default async function ProfilePage() {
       <Card>
         <h2 className="text-base font-semibold text-stone-900">전체 멘티</h2>
         <p className="mt-1 text-2xl font-semibold text-emerald-700">
-          {mentees?.length ?? 0}명
+          {mentees.length}명
         </p>
 
-        {mentees && mentees.length > 0 ? (
-          <ul className="mt-3 flex flex-col divide-y divide-stone-100">
-            {mentees.map((mentee) => (
-              <li key={mentee.id}>
-                <Link
-                  href={`/mentees/${mentee.id}`}
-                  className="block py-2 text-sm font-medium text-stone-900 hover:text-emerald-700"
-                >
-                  {mentee.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
+        {mentees.length > 0 ? (
+          <MenteeListPreview mentees={mentees} />
         ) : (
           <p className="mt-2 text-sm text-stone-500">
             등록된 멘티가 없습니다.
@@ -173,29 +104,7 @@ export default async function ProfilePage() {
             </p>
           </div>
         ) : (
-          <div className="mt-3 flex flex-col gap-2">
-            {alerts.map(({ mentee, finding }) => {
-              const style = ALERT_STYLES[finding.severity];
-              return (
-                <Link
-                  key={`${mentee.id}-${finding.id}`}
-                  href={`/mentees/${mentee.id}`}
-                  className={`block rounded-xl border p-3 hover:opacity-90 ${style.card}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}
-                    >
-                      {mentee.name}
-                    </span>
-                    <p className="text-sm font-medium text-stone-900">
-                      {finding.title}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          <AlertListPreview alerts={alerts} />
         )}
       </Card>
 

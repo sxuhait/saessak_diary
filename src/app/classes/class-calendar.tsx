@@ -13,7 +13,7 @@ import { cancelClassOccurrence, uncancelClassOccurrence } from "./actions";
 type ClassItem = {
   id: string;
   name: string;
-  day_of_week: number;
+  days: number[];
   teacher_name: string | null;
   color: ClassColor;
 };
@@ -51,7 +51,9 @@ export function ClassCalendar({
   const classesByDay = useMemo(() => {
     const map: Record<number, ClassItem[]> = {};
     for (const item of classes) {
-      map[item.day_of_week] = [...(map[item.day_of_week] ?? []), item];
+      for (const day of item.days) {
+        map[day] = [...(map[day] ?? []), item];
+      }
     }
     return map;
   }, [classes]);

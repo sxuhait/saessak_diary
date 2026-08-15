@@ -27,27 +27,36 @@ export default async function MenteeSessionLogPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: mentee, error } = await supabase
-    .from("mentees")
-    .select("id, name, school, grade")
-    .eq("id", menteeId)
-    .maybeSingle();
+  const [
+    { data: mentee, error },
+    { data: allMentees },
+    { data: logRows, error: logsError },
+    { data: enrollmentRows },
+    { data: allClassRows },
+    { data: attendance },
+  ] = await Promise.all([
+    supabase.from("mentees").select("id, name, school, grade").eq("id", menteeId).maybeSingle(),
+    supabase.from("mentees").select("id, name").order("name"),
+    supabase
+      .from("session_logs")
+      .select("id, session_date, subject, progress, content, mentor_id, mentors(name)")
+      .eq("mentee_id", menteeId)
+      .order("session_date", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("class_enrollments")
+      .select("id, class_id, classes(name, teacher_name, class_days(day_of_week))")
+      .eq("mentee_id", menteeId),
+    supabase
+      .from("classes")
+      .select("id, name, teacher_name, class_days(day_of_week)")
+      .order("name"),
+    supabase.from("attendance").select("session_date, status").eq("mentee_id", menteeId),
+  ]);
 
   if (error || !mentee) {
     notFound();
   }
-
-  const { data: allMentees } = await supabase
-    .from("mentees")
-    .select("id, name")
-    .order("name");
-
-  const { data: logRows, error: logsError } = await supabase
-    .from("session_logs")
-    .select("id, session_date, subject, progress, content, mentor_id, mentors(name)")
-    .eq("mentee_id", menteeId)
-    .order("session_date", { ascending: false })
-    .order("created_at", { ascending: false });
 
   const logs = (logRows ?? []).map((log) => ({
     id: log.id,
@@ -59,11 +68,6 @@ export default async function MenteeSessionLogPage({
     mentorId: log.mentor_id,
   }));
 
-  const { data: enrollmentRows } = await supabase
-    .from("class_enrollments")
-    .select("id, class_id, classes(name, day_of_week, teacher_name)")
-    .eq("mentee_id", menteeId);
-
   const enrolled = (enrollmentRows ?? []).flatMap((row) =>
     row.classes
       ? [
@@ -71,23 +75,21 @@ export default async function MenteeSessionLogPage({
             enrollmentId: row.id,
             classId: row.class_id,
             name: row.classes.name,
-            dayOfWeek: row.classes.day_of_week,
+            days: row.classes.class_days
+              .map((d) => d.day_of_week)
+              .sort((a, b) => a - b),
             teacherName: row.classes.teacher_name,
           },
         ]
       : [],
   );
 
-  const { data: allClasses } = await supabase
-    .from("classes")
-    .select("id, name, day_of_week, teacher_name")
-    .order("day_of_week")
-    .order("name");
-
-  const { data: attendance } = await supabase
-    .from("attendance")
-    .select("session_date, status")
-    .eq("mentee_id", menteeId);
+  const allClasses = (allClassRows ?? []).map((item) => ({
+    id: item.id,
+    name: item.name,
+    teacher_name: item.teacher_name,
+    days: item.class_days.map((d) => d.day_of_week).sort((a, b) => a - b),
+  }));
 
   const menteeSubtitle = [mentee.school, mentee.grade].filter(Boolean).join(" · ");
 
@@ -119,7 +121,7 @@ export default async function MenteeSessionLogPage({
       <ClassEnrollments
         menteeId={mentee.id}
         enrolled={enrolled}
-        allClasses={allClasses ?? []}
+        allClasses={allClasses}
       />
 
       <SessionLogForm

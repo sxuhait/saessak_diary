@@ -5,7 +5,7 @@ import { SidebarNav } from "@/components/sidebar-nav";
 import { Topbar } from "@/components/topbar";
 import { BottomNav } from "@/components/bottom-nav";
 import { buildNotifications, type AppNotification } from "@/lib/notifications";
-import type { AttendanceInput, SessionLogInput } from "@/lib/learning-diagnostics";
+import { getMenteeDiagnosticsData } from "@/lib/mentee-diagnostics-data";
 import "./globals.css";
 
 function todayDateString(date: Date) {
@@ -28,7 +28,7 @@ const notoSansKr = Noto_Sans_KR({
 
 export const metadata: Metadata = {
   title: "새싹 다이어리",
-  description: "커뮤니티 지역아동센터 멘토링 코파일럿",
+  description: "온새미로지역아동센터 멘토링 코파일럿",
 };
 
 export default async function RootLayout({
@@ -46,60 +46,27 @@ export default async function RootLayout({
   let isAdmin = false;
 
   if (user) {
-    const { data: mentor } = await supabase
-      .from("mentors")
-      .select("name, role")
-      .eq("id", user.id)
-      .maybeSingle();
+    const [
+      { data: mentor },
+      { mentees, logsByMentee, attendanceByMentee },
+      { data: eventRows },
+      { data: lastActivity },
+    ] = await Promise.all([
+      supabase.from("mentors").select("name, role").eq("id", user.id).maybeSingle(),
+      getMenteeDiagnosticsData(),
+      supabase
+        .from("center_events")
+        .select("id, title, start_date")
+        .gte("end_date", todayDateString(new Date())),
+      supabase.rpc("mentor_last_activity", { p_mentor_id: user.id }),
+    ]);
+
     const name = mentor?.name?.trim();
     profileInitial = name && !name.includes("@") ? name[0] : undefined;
     isAdmin = mentor?.role === "admin";
 
-    const { data: mentees } = await supabase
-      .from("mentees")
-      .select("id, name")
-      .order("name");
-    const menteeIds = (mentees ?? []).map((mentee) => mentee.id);
-
-    const { data: logRows } = menteeIds.length
-      ? await supabase
-          .from("session_logs")
-          .select("mentee_id, session_date, subject")
-          .in("mentee_id", menteeIds)
-      : { data: [] };
-
-    const { data: attendanceRows } = menteeIds.length
-      ? await supabase
-          .from("attendance")
-          .select("mentee_id, session_date, status")
-          .in("mentee_id", menteeIds)
-      : { data: [] };
-
-    const { data: eventRows } = await supabase
-      .from("center_events")
-      .select("id, title, start_date")
-      .gte("end_date", todayDateString(new Date()));
-
-    const { data: lastActivity } = await supabase.rpc("mentor_last_activity", {
-      p_mentor_id: user.id,
-    });
-
-    const logsByMentee = new Map<string, SessionLogInput[]>();
-    for (const log of logRows ?? []) {
-      const list = logsByMentee.get(log.mentee_id) ?? [];
-      list.push({ session_date: log.session_date, subject: log.subject });
-      logsByMentee.set(log.mentee_id, list);
-    }
-
-    const attendanceByMentee = new Map<string, AttendanceInput[]>();
-    for (const record of attendanceRows ?? []) {
-      const list = attendanceByMentee.get(record.mentee_id) ?? [];
-      list.push({ session_date: record.session_date, status: record.status });
-      attendanceByMentee.set(record.mentee_id, list);
-    }
-
     notifications = buildNotifications({
-      mentees: mentees ?? [],
+      mentees,
       logsByMentee,
       attendanceByMentee,
       events: eventRows ?? [],

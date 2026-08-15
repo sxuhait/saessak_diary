@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { cardClassName } from "@/components/ui/card";
 import { secondaryPillClass } from "@/components/ui/form";
 import { deleteEventPhoto, uploadEventPhotos } from "./actions";
@@ -88,11 +89,13 @@ export function EventPhotoGallery({
               key={url}
               className="group relative aspect-square overflow-hidden rounded-xl border border-stone-200 bg-stone-50"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={url}
                 alt="행사 사진"
-                className="h-full w-full object-cover"
+                fill
+                sizes="(min-width: 640px) 33vw, 50vw"
+                className="object-cover"
+                unoptimized={url.toLowerCase().endsWith(".gif")}
               />
               <button
                 type="button"

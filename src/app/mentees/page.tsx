@@ -9,18 +9,12 @@ export default async function MenteeListPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: mentor } = await supabase
-    .from("mentors")
-    .select("role")
-    .eq("id", user?.id ?? "")
-    .maybeSingle();
+  const [{ data: mentor }, { data: mentees, error }] = await Promise.all([
+    supabase.from("mentors").select("role").eq("id", user?.id ?? "").maybeSingle(),
+    supabase.from("mentees").select("id, name, school, grade").order("name"),
+  ]);
 
   const isAdmin = mentor?.role === "admin";
-
-  const { data: mentees, error } = await supabase
-    .from("mentees")
-    .select("id, name, school, grade")
-    .order("name");
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">

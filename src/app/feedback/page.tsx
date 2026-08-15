@@ -3,6 +3,7 @@ import { Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
+import type { FeedbackUsefulFeature } from "./actions";
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
@@ -11,6 +12,14 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   hour: "2-digit",
   minute: "2-digit",
 });
+
+const USEFUL_FEATURE_LABELS: Record<FeedbackUsefulFeature, string> = {
+  session_log: "일지 작성",
+  diagnostics: "학습 진단",
+  attendance: "출석 체크",
+  schedule: "시간표",
+  other: "기타",
+};
 
 export default async function FeedbackListPage() {
   const supabase = await createClient();
@@ -31,7 +40,9 @@ export default async function FeedbackListPage() {
 
   const { data: feedback, error } = await supabase
     .from("feedback")
-    .select("id, rating, comment, created_at, mentors(name)")
+    .select(
+      "id, rating, comment, useful_feature, pain_point, created_at, mentors(name)",
+    )
     .order("created_at", { ascending: false });
 
   return (
@@ -80,9 +91,24 @@ export default async function FeedbackListPage() {
                 </span>
               </div>
 
+              {item.useful_feature && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+                    유용한 기능: {USEFUL_FEATURE_LABELS[item.useful_feature]}
+                  </span>
+                </div>
+              )}
+
               {item.comment && (
                 <p className="mt-2 whitespace-pre-wrap text-sm text-stone-700">
                   {item.comment}
+                </p>
+              )}
+
+              {item.pain_point && (
+                <p className="mt-2 text-sm text-stone-700">
+                  <span className="font-medium text-stone-500">아쉬운 점</span>{" "}
+                  {item.pain_point}
                 </p>
               )}
 

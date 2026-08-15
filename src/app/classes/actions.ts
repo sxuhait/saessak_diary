@@ -8,7 +8,14 @@ export type ClassActionState = { error?: string };
 
 function parseClassForm(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
-  const dayOfWeek = Number(formData.get("day_of_week"));
+  const daysOfWeek = [
+    ...new Set(
+      formData
+        .getAll("day_of_week")
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value >= 0 && value <= 6),
+    ),
+  ].sort((a, b) => a - b);
   const teacherName = String(formData.get("teacher_name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const colorInput = String(formData.get("color") ?? "");
@@ -18,7 +25,7 @@ function parseClassForm(formData: FormData) {
     ? (colorInput as ClassColor)
     : "rose";
 
-  return { name, dayOfWeek, teacherName, description, color };
+  return { name, daysOfWeek, teacherName, description, color };
 }
 
 export async function createClass(
@@ -45,23 +52,41 @@ export async function createClass(
     return { error: "관리자만 수업을 추가할 수 있습니다." };
   }
 
-  const { name, dayOfWeek, teacherName, description, color } =
+  const { name, daysOfWeek, teacherName, description, color } =
     parseClassForm(formData);
 
-  if (!name || Number.isNaN(dayOfWeek)) {
-    return { error: "수업 이름과 요일을 입력해주세요." };
+  if (!name) {
+    return { error: "수업 이름을 입력해주세요." };
   }
 
-  const { error } = await supabase.from("classes").insert({
-    name,
-    day_of_week: dayOfWeek,
-    teacher_name: teacherName || null,
-    description: description || null,
-    color,
-  });
+  if (daysOfWeek.length === 0) {
+    return { error: "요일을 하나 이상 선택해주세요." };
+  }
 
-  if (error) {
+  const { data: newClass, error } = await supabase
+    .from("classes")
+    .insert({
+      name,
+      teacher_name: teacherName || null,
+      description: description || null,
+      color,
+    })
+    .select("id")
+    .single();
+
+  if (error || !newClass) {
     return { error: "수업 저장에 실패했습니다." };
+  }
+
+  const { error: daysError } = await supabase.from("class_days").insert(
+    daysOfWeek.map((dayOfWeek) => ({ class_id: newClass.id, day_of_week: dayOfWeek })),
+  );
+
+  if (daysError) {
+    // Roll back the orphaned class row rather than leaving a class with no
+    // scheduled days behind.
+    await supabase.from("classes").delete().eq("id", newClass.id);
+    return { error: "수업 요일 저장에 실패했습니다." };
   }
 
   revalidatePath("/classes");
@@ -94,18 +119,21 @@ export async function updateClass(
     return { error: "관리자만 수업을 수정할 수 있습니다." };
   }
 
-  const { name, dayOfWeek, teacherName, description, color } =
+  const { name, daysOfWeek, teacherName, description, color } =
     parseClassForm(formData);
 
-  if (!name || Number.isNaN(dayOfWeek)) {
-    return { error: "수업 이름과 요일을 입력해주세요." };
+  if (!name) {
+    return { error: "수업 이름을 입력해주세요." };
+  }
+
+  if (daysOfWeek.length === 0) {
+    return { error: "요일을 하나 이상 선택해주세요." };
   }
 
   const { error } = await supabase
     .from("classes")
     .update({
       name,
-      day_of_week: dayOfWeek,
       teacher_name: teacherName || null,
       description: description || null,
       color,
@@ -114,6 +142,25 @@ export async function updateClass(
 
   if (error) {
     return { error: "수업 수정에 실패했습니다." };
+  }
+
+  // Simplest way to reconcile the day set: drop everything and reinsert,
+  // rather than diffing against what's currently stored.
+  const { error: deleteDaysError } = await supabase
+    .from("class_days")
+    .delete()
+    .eq("class_id", classId);
+
+  if (deleteDaysError) {
+    return { error: "수업 요일 수정에 실패했습니다." };
+  }
+
+  const { error: insertDaysError } = await supabase.from("class_days").insert(
+    daysOfWeek.map((dayOfWeek) => ({ class_id: classId, day_of_week: dayOfWeek })),
+  );
+
+  if (insertDaysError) {
+    return { error: "수업 요일 수정에 실패했습니다." };
   }
 
   refresh();

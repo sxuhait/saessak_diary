@@ -58,7 +58,7 @@ export function NewEventForm({ defaultDate }: { defaultDate: string }) {
         </select>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className={labelClass}>시작일</label>
           <DatePicker name="start_date" defaultValue={defaultDate} />

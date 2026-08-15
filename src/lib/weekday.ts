@@ -1,4 +1,5 @@
-// day_of_week convention shared with classes.day_of_week: 0 = Sunday .. 6 = Saturday.
+// day_of_week convention shared with class_days.day_of_week and
+// mentor_schedules.day_of_week: 0 = Sunday .. 6 = Saturday.
 export const DAY_LABELS = [
   "일요일",
   "월요일",

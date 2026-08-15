@@ -48,3 +48,17 @@ export const CLASS_COLOR_DOT_CLASS: Record<ClassColor, string> = {
 export function suggestNextColor(existingCount: number): ClassColor {
   return CLASS_COLORS[existingCount % CLASS_COLORS.length];
 }
+
+// Same pastel families as CLASS_COLOR_DOT_CLASS, extended into a full
+// bg/border/text triad for larger content cards (e.g. schedule_items blocks)
+// rather than just a small dot.
+export const CLASS_COLOR_CARD_CLASS: Record<ClassColor, string> = {
+  rose: "bg-rose-50 border-rose-200 text-rose-800",
+  orange: "bg-amber-50 border-amber-200 text-amber-800",
+  violet: "bg-violet-50 border-violet-200 text-violet-800",
+  sky: "bg-sky-50 border-sky-200 text-sky-800",
+  fuchsia: "bg-fuchsia-50 border-fuchsia-200 text-fuchsia-800",
+  indigo: "bg-orange-50 border-orange-200 text-orange-800",
+  teal: "bg-teal-50 border-teal-200 text-teal-800",
+  cyan: "bg-yellow-50 border-yellow-200 text-yellow-800",
+};

@@ -5,8 +5,11 @@
 
 export const labelClass = "mb-1.5 block text-sm font-medium text-stone-700";
 
+// min-w-0 overrides the browser default (min-width: auto) that some native
+// controls -- <input type="date">/"time" especially -- otherwise use, which
+// lets them ignore w-full and overflow a narrow flex/grid cell on mobile.
 export const fieldClass =
-  "w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-base text-stone-900 placeholder:text-stone-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20";
+  "w-full min-w-0 rounded-xl border border-stone-300 bg-white px-4 py-3 text-base text-stone-900 placeholder:text-stone-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20";
 
 export const primaryButtonClass =
   "rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50";

@@ -101,7 +101,7 @@ export function SearchBar() {
       />
 
       {showPanel && (
-        <div className="absolute top-11 left-0 z-50 w-full min-w-[20rem] rounded-2xl border border-stone-200 bg-white p-2 shadow-lg">
+        <div className="absolute top-11 left-0 z-50 w-full max-w-[calc(100vw-2rem)] rounded-2xl border border-stone-200 bg-white p-2 shadow-lg">
           {loading && !results ? (
             <p className="px-2 py-6 text-center text-sm text-stone-500">검색 중...</p>
           ) : !hasResults ? (
