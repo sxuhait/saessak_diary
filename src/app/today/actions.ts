@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isValidTimeValue } from "@/lib/time-format";
 
 export type TodayActionState = { error?: string };
 
@@ -43,6 +44,10 @@ export async function addMentorSchedule(
 
   if (Number.isNaN(dayOfWeek) || !startTime || !endTime) {
     return { error: "요일과 시간을 입력해주세요." };
+  }
+
+  if (!isValidTimeValue(startTime) || !isValidTimeValue(endTime)) {
+    return { error: "시간은 24시간 형식(HH:MM)으로 입력해주세요." };
   }
 
   if (endTime <= startTime) {

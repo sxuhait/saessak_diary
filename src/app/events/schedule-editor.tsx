@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { fieldClass, secondaryPillClass } from "@/components/ui/form";
+import { TimeField } from "@/components/ui/time-field";
 import {
   isValidTimeValue,
   parseSchedule,
@@ -16,23 +17,6 @@ function nextRowId() {
 }
 
 type Row = ScheduleItem & { id: string };
-
-// 30-minute increments for the picker list ("09:00", "09:30", ...) --
-// alongside, not instead of, direct typing.
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
-  const hour = String(Math.floor(i / 2)).padStart(2, "0");
-  const minute = i % 2 === 0 ? "00" : "30";
-  return `${hour}:${minute}`;
-});
-
-// Digits-only, auto-inserts the colon once the minute portion starts (e.g.
-// typing "1400" becomes "14:00" as you go) -- pure function of the digit
-// content so backspacing "un-formats" naturally too.
-function formatTypedTime(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 4);
-  if (digits.length <= 2) return digits;
-  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
-}
 
 // Renders as repeatable time+content rows but submits as a single hidden
 // JSON field -- the server action (createEvent/updateEvent) filters blanks
@@ -75,46 +59,17 @@ export function ScheduleEditor({
       )}
 
       {rows.map((row) => {
-        const timeInvalid = row.time !== "" && !isValidTimeValue(row.time);
         return (
           <div
             key={row.id}
             className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center"
           >
-            <div className="flex min-w-0 shrink-0 gap-2">
-              <div className="w-24 shrink-0">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={5}
-                  value={row.time}
-                  onChange={(e) =>
-                    updateRow(row.id, { time: formatTypedTime(e.target.value) })
-                  }
-                  placeholder="예: 1400"
-                  aria-label="시간 입력"
-                  pattern="([01]\d|2[0-3]):[0-5]\d"
-                  title="24시간 형식으로 입력해주세요 (예: 14:00)"
-                  className={`${fieldClass} min-w-0 bg-white ${
-                    timeInvalid ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""
-                  }`}
-                />
-              </div>
-              <div className="w-28 shrink-0">
-                <select
-                  value={row.time}
-                  onChange={(e) => updateRow(row.id, { time: e.target.value })}
-                  aria-label="시간 목록에서 선택"
-                  className={`${fieldClass} min-w-0 bg-white`}
-                >
-                  <option value="">직접 입력</option>
-                  {TIME_OPTIONS.map((time) => (
-                    <option key={time} value={time}>
-                      {time}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="min-w-0 shrink-0">
+              <TimeField
+                value={row.time}
+                onChange={(time) => updateRow(row.id, { time })}
+                ariaLabel="시간 입력"
+              />
             </div>
             <div className="min-w-0 flex-1">
               <input

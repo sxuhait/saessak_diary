@@ -9,6 +9,8 @@ import {
   primaryButtonClass,
   textDangerActionClass,
 } from "@/components/ui/form";
+import { TimeField } from "@/components/ui/time-field";
+import { isValidTimeValue } from "@/lib/time-format";
 import {
   addMentorSchedule,
   deleteMentorSchedule,
@@ -39,6 +41,31 @@ export function MentorScheduleManager({
   );
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+
+  // useActionState returns a fresh {} object on every successful submission
+  // (error absent) -- adjust the controlled time fields during render (the
+  // React-recommended "previous render" pattern, not an effect) so the form
+  // doesn't retain the last entered values after "일정 추가" the way it did
+  // before these were controlled <input type="time"> fields.
+  const [prevState, setPrevState] = useState(state);
+  if (state !== prevState) {
+    setPrevState(state);
+    if (!state.error) {
+      setStartTime("");
+      setEndTime("");
+    }
+  }
+
+  const startInvalid = startTime !== "" && !isValidTimeValue(startTime);
+  const endInvalid = endTime !== "" && !isValidTimeValue(endTime);
+  const rangeInvalid =
+    !startInvalid &&
+    !endInvalid &&
+    startTime !== "" &&
+    endTime !== "" &&
+    endTime <= startTime;
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -106,34 +133,46 @@ export function MentorScheduleManager({
             <label htmlFor="start_time" className={labelClass}>
               시작
             </label>
-            <input
+            <TimeField
               id="start_time"
               name="start_time"
-              type="time"
+              value={startTime}
+              onChange={setStartTime}
               required
-              className={fieldClass}
+              ariaLabel="시작 시간"
             />
           </div>
           <div>
             <label htmlFor="end_time" className={labelClass}>
               종료
             </label>
-            <input
+            <TimeField
               id="end_time"
               name="end_time"
-              type="time"
+              value={endTime}
+              onChange={setEndTime}
               required
-              className={fieldClass}
+              ariaLabel="종료 시간"
             />
           </div>
         </div>
 
+        {(startInvalid || endInvalid) && (
+          <p className="text-sm text-red-600">
+            시간은 24시간 형식(HH:MM)으로 입력해주세요. 예: 14:00, 21:00
+          </p>
+        )}
+        {rangeInvalid && (
+          <p className="text-sm text-red-600">
+            종료 시간은 시작 시간보다 늦어야 합니다.
+          </p>
+        )}
         {state.error && <p className="text-sm text-red-600">{state.error}</p>}
 
         <button
           type="submit"
-          disabled={pending}
-          className={`self-start ${primaryButtonClass}`}
+          disabled={pending || startInvalid || endInvalid || rangeInvalid}
+          className={`self-start ${primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}
         >
           {pending ? "추가 중..." : "일정 추가"}
         </button>

@@ -11,12 +11,10 @@ export type ScheduleItem = {
 
 // 24-hour "HH:MM", no AM/PM. Shared between the client (live validation
 // styling on the typed-time input) and the server actions (blocking save on
-// a malformed time like "25:00" instead of silently storing it).
-const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
-
-export function isValidTimeValue(time: string): boolean {
-  return time === "" || TIME_PATTERN.test(time);
-}
+// a malformed time like "25:00" instead of silently storing it). Lives in
+// time-format.ts so other features (mentor schedules) can reuse it without
+// depending on an "event"-named module.
+export { isValidTimeValue } from "@/lib/time-format";
 
 function isScheduleItem(value: unknown): value is ScheduleItem {
   if (typeof value !== "object" || value === null) return false;

@@ -90,7 +90,7 @@ export default async function RootLayout({
               <Topbar profileInitial={profileInitial} notifications={notifications} />
               <main className="flex flex-1 flex-col pb-20 lg:pb-0">{children}</main>
             </div>
-            <BottomNav />
+            <BottomNav isAdmin={isAdmin} />
           </div>
         ) : (
           children
