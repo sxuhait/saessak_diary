@@ -6,6 +6,22 @@ import { createClient } from "@/lib/supabase/server";
 
 export type SessionLogState = { error?: string };
 
+// SubjectRowsEditor submits each row as a parallel name="subject"/
+// name="progress" pair (paired by index in the form), rather than a single
+// value -- zip them back together here and drop any row with a blank
+// subject (a progress note without a subject label has nothing to attach
+// to).
+function parseSubjectRows(formData: FormData): { subject: string; progress: string }[] {
+  const subjects = formData.getAll("subject").map((value) => String(value).trim());
+  const progresses = formData.getAll("progress").map((value) => String(value).trim());
+  const rows: { subject: string; progress: string }[] = [];
+  for (let i = 0; i < subjects.length; i++) {
+    if (!subjects[i]) continue;
+    rows.push({ subject: subjects[i], progress: progresses[i] ?? "" });
+  }
+  return rows;
+}
+
 export async function createSessionLog(
   menteeId: string,
   _prevState: SessionLogState,
@@ -22,25 +38,44 @@ export async function createSessionLog(
   }
 
   const sessionDate = String(formData.get("session_date") ?? "");
-  const subject = String(formData.get("subject") ?? "").trim();
-  const progress = String(formData.get("progress") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
+  const subjectRows = parseSubjectRows(formData);
 
-  if (!sessionDate || !content) {
-    return { error: "날짜와 내용을 입력해주세요." };
+  if (!sessionDate) {
+    return { error: "날짜를 입력해주세요." };
   }
 
-  const { error } = await supabase.from("session_logs").insert({
-    mentee_id: menteeId,
-    mentor_id: user.id,
-    session_date: sessionDate,
-    subject: subject || null,
-    progress: progress || null,
-    content,
-  });
+  const { data: newLog, error } = await supabase
+    .from("session_logs")
+    .insert({
+      mentee_id: menteeId,
+      mentor_id: user.id,
+      session_date: sessionDate,
+      content: content || null,
+    })
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !newLog) {
     return { error: "저장에 실패했습니다. 잠시 후 다시 시도해주세요." };
+  }
+
+  if (subjectRows.length > 0) {
+    const { error: subjectsError } = await supabase.from("session_log_subjects").insert(
+      subjectRows.map((row, index) => ({
+        session_log_id: newLog.id,
+        subject: row.subject,
+        progress: row.progress || null,
+        position: index,
+      })),
+    );
+
+    if (subjectsError) {
+      // Roll back the orphaned log rather than leaving one behind with no
+      // subjects, matching the createClass/class_days rollback pattern.
+      await supabase.from("session_logs").delete().eq("id", newLog.id);
+      return { error: "과목 저장에 실패했습니다." };
+    }
   }
 
   revalidatePath(`/mentees/${menteeId}`);
@@ -76,26 +111,50 @@ export async function updateSessionLog(
   }
 
   const sessionDate = String(formData.get("session_date") ?? "");
-  const subject = String(formData.get("subject") ?? "").trim();
-  const progress = String(formData.get("progress") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
+  const subjectRows = parseSubjectRows(formData);
 
-  if (!sessionDate || !content) {
-    return { error: "날짜와 내용을 입력해주세요." };
+  if (!sessionDate) {
+    return { error: "날짜를 입력해주세요." };
   }
 
   const { error } = await supabase
     .from("session_logs")
     .update({
       session_date: sessionDate,
-      subject: subject || null,
-      progress: progress || null,
-      content,
+      content: content || null,
     })
     .eq("id", logId);
 
   if (error) {
     return { error: "수정에 실패했습니다." };
+  }
+
+  // Simplest way to reconcile the subject set: drop everything and
+  // reinsert, rather than diffing against what's currently stored --
+  // matches updateClass/class_days.
+  const { error: deleteSubjectsError } = await supabase
+    .from("session_log_subjects")
+    .delete()
+    .eq("session_log_id", logId);
+
+  if (deleteSubjectsError) {
+    return { error: "과목 수정에 실패했습니다." };
+  }
+
+  if (subjectRows.length > 0) {
+    const { error: insertSubjectsError } = await supabase.from("session_log_subjects").insert(
+      subjectRows.map((row, index) => ({
+        session_log_id: logId,
+        subject: row.subject,
+        progress: row.progress || null,
+        position: index,
+      })),
+    );
+
+    if (insertSubjectsError) {
+      return { error: "과목 수정에 실패했습니다." };
+    }
   }
 
   refresh();

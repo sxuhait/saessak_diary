@@ -2,8 +2,7 @@ import { cardClassName } from "@/components/ui/card";
 
 type SessionLog = {
   session_date: string;
-  subject: string | null;
-  progress: string | null;
+  subjects: { subject: string; progress: string | null }[];
 };
 
 type SubjectRow = {
@@ -38,18 +37,21 @@ export function SubjectSummary({ logs }: { logs: SessionLog[] }) {
   const rows: SubjectRow[] = [];
   const seen = new Set<string>();
 
-  // logs is expected sorted by session_date desc, so the first log we see
-  // for a subject is that subject's most recent one.
+  // logs is expected sorted by session_date desc (and each log's subjects
+  // sorted by entry order), so the first subject row we see for a subject
+  // name is that subject's most recent one.
   for (const log of logs) {
-    if (!log.subject || seen.has(log.subject)) continue;
-    seen.add(log.subject);
-    const lastDate = parseLocalDate(log.session_date);
-    rows.push({
-      subject: log.subject,
-      lastDate,
-      daysAgo: daysBetween(lastDate, today),
-      lastProgress: log.progress,
-    });
+    for (const { subject, progress } of log.subjects) {
+      if (seen.has(subject)) continue;
+      seen.add(subject);
+      const lastDate = parseLocalDate(log.session_date);
+      rows.push({
+        subject,
+        lastDate,
+        daysAgo: daysBetween(lastDate, today),
+        lastProgress: progress,
+      });
+    }
   }
 
   rows.sort((a, b) => a.daysAgo - b.daysAgo);

@@ -44,10 +44,11 @@ export default async function ProfilePage() {
       getMenteeDiagnosticsData(),
       supabase
         .from("session_logs")
-        .select("id, session_date, subject, mentees(name)")
+        .select("id, session_date, mentees(name), session_log_subjects(subject, position)")
         .eq("mentor_id", user?.id ?? "")
         .order("session_date", { ascending: false })
         .order("created_at", { ascending: false })
+        .order("position", { referencedTable: "session_log_subjects", ascending: true })
         .limit(5),
     ]);
 
@@ -119,11 +120,14 @@ export default async function ProfilePage() {
                   <span className="font-medium text-stone-900">
                     {log.mentees?.name ?? "-"}
                   </span>
-                  {log.subject && (
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
-                      {log.subject}
+                  {log.session_log_subjects.map((s, index) => (
+                    <span
+                      key={index}
+                      className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700"
+                    >
+                      {s.subject}
                     </span>
-                  )}
+                  ))}
                 </div>
                 <p className="mt-0.5 text-xs text-stone-500">
                   {dateFormatter.format(parseLocalDate(log.session_date))}

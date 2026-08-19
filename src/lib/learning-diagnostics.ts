@@ -9,6 +9,29 @@ export type SessionLogInput = {
   subject: string | null;
 };
 
+// A single session log can now carry multiple subject/progress lines (see
+// session_log_subjects). The rules below only care about (date, subject)
+// pairs, so rather than teaching every rule about the one-to-many shape,
+// callers flatten each log into one SessionLogInput per subject line here
+// (or one subject: null entry for a log with no subject lines at all, so
+// "no logs yet" still reads as zero entries only when there really are no
+// session_logs rows).
+export function flattenSubjectLogs(
+  logs: { session_date: string; subjects: { subject: string }[] }[],
+): SessionLogInput[] {
+  const result: SessionLogInput[] = [];
+  for (const log of logs) {
+    if (log.subjects.length === 0) {
+      result.push({ session_date: log.session_date, subject: null });
+      continue;
+    }
+    for (const { subject } of log.subjects) {
+      result.push({ session_date: log.session_date, subject });
+    }
+  }
+  return result;
+}
+
 export type AttendanceInput = {
   session_date: string; // YYYY-MM-DD
   status: "present" | "absent" | "late" | "excused";

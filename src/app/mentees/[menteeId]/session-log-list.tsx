@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { DatePicker } from "@/components/date-picker";
-import { COMMON_SUBJECTS } from "@/lib/subjects";
 import {
   labelClass,
   fieldClass,
@@ -11,14 +10,14 @@ import {
   textActionClass,
   textDangerActionClass,
 } from "@/components/ui/form";
+import { SubjectRowsEditor } from "./subject-rows-editor";
 import { deleteSessionLog, updateSessionLog } from "./actions";
 
 type SessionLog = {
   id: string;
   session_date: string;
-  subject: string | null;
-  progress: string | null;
-  content: string;
+  subjects: { subject: string; progress: string | null }[];
+  content: string | null;
   authorName: string | null;
   mentorId: string;
 };
@@ -71,48 +70,25 @@ function EditLogForm({
       </div>
 
       <div>
-        <label htmlFor={`subject-${log.id}`} className={labelClass}>
-          과목 (선택)
-        </label>
-        <input
-          id={`subject-${log.id}`}
-          name="subject"
-          type="text"
-          list={`subject-options-${log.id}`}
-          defaultValue={log.subject ?? ""}
-          className={fieldClass}
-        />
-        <datalist id={`subject-options-${log.id}`}>
-          {COMMON_SUBJECTS.map((subject) => (
-            <option key={subject} value={subject} />
-          ))}
-        </datalist>
-      </div>
-
-      <div>
-        <label htmlFor={`progress-${log.id}`} className={labelClass}>
-          진도 (선택)
-        </label>
-        <input
-          id={`progress-${log.id}`}
-          name="progress"
-          type="text"
-          defaultValue={log.progress ?? ""}
-          placeholder="예: 문제집 45~52p, 3단원"
-          className={fieldClass}
+        <label className={labelClass}>과목·학습량 (선택)</label>
+        <SubjectRowsEditor
+          datalistId={`subject-options-${log.id}`}
+          defaultRows={log.subjects.map((s) => ({
+            subject: s.subject,
+            progress: s.progress ?? "",
+          }))}
         />
       </div>
 
       <div>
         <label htmlFor={`content-${log.id}`} className={labelClass}>
-          일지 내용
+          일지 내용 (선택)
         </label>
         <textarea
           id={`content-${log.id}`}
           name="content"
-          required
           rows={5}
-          defaultValue={log.content}
+          defaultValue={log.content ?? ""}
           className={fieldClass}
         />
       </div>
@@ -186,25 +162,30 @@ export function SessionLogList({
               <span className="text-sm font-medium text-stone-900">
                 {formatSessionDate(log.session_date)}
               </span>
-              {log.subject && (
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
-                  {log.subject}
-                </span>
-              )}
             </div>
             {log.authorName && (
               <p className="mt-0.5 text-xs text-stone-500">
                 작성 멘토: {log.authorName}
               </p>
             )}
-            {log.progress && (
-              <p className="mt-2 text-xs text-stone-500">
-                진도: {log.progress}
+            {log.subjects.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {log.subjects.map((s, index) => (
+                  <span
+                    key={index}
+                    className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700"
+                  >
+                    {s.subject}
+                    {s.progress ? ` · ${s.progress}` : ""}
+                  </span>
+                ))}
+              </div>
+            )}
+            {log.content && (
+              <p className="mt-2 whitespace-pre-wrap text-sm text-stone-700">
+                {log.content}
               </p>
             )}
-            <p className="mt-2 whitespace-pre-wrap text-sm text-stone-700">
-              {log.content}
-            </p>
 
             <div className="mt-3 flex items-center gap-4 border-t border-stone-100 pt-3">
               {log.mentorId === currentMentorId ? (

@@ -11,15 +11,18 @@ export default async function MyLogsPage() {
 
   const { data: logRows, error } = await supabase
     .from("session_logs")
-    .select("id, session_date, subject, content, mentee_id, mentees(name)")
+    .select(
+      "id, session_date, content, mentee_id, mentees(name), session_log_subjects(subject, position)",
+    )
     .eq("mentor_id", user?.id ?? "")
     .order("session_date", { ascending: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("position", { referencedTable: "session_log_subjects", ascending: true });
 
   const logs = (logRows ?? []).map((log) => ({
     id: log.id,
     session_date: log.session_date,
-    subject: log.subject,
+    subjects: log.session_log_subjects.map((s) => s.subject),
     content: log.content,
     menteeId: log.mentee_id,
     menteeName: log.mentees?.name ?? "알 수 없음",

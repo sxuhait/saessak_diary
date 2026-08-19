@@ -436,41 +436,70 @@ export type Database = {
         }
         Relationships: []
       }
+      session_log_subjects: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          progress: string | null
+          session_log_id: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position?: number
+          progress?: string | null
+          session_log_id: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          progress?: string | null
+          session_log_id?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_log_subjects_session_log_id_fkey"
+            columns: ["session_log_id"]
+            isOneToOne: false
+            referencedRelation: "session_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_logs: {
         Row: {
           attendance_id: string | null
-          content: string
+          content: string | null
           created_at: string
           id: string
           mentee_id: string
           mentor_id: string
-          progress: string | null
           session_date: string
-          subject: string | null
           updated_at: string
         }
         Insert: {
           attendance_id?: string | null
-          content: string
+          content?: string | null
           created_at?: string
           id?: string
           mentee_id: string
           mentor_id: string
-          progress?: string | null
           session_date: string
-          subject?: string | null
           updated_at?: string
         }
         Update: {
           attendance_id?: string | null
-          content?: string
+          content?: string | null
           created_at?: string
           id?: string
           mentee_id?: string
           mentor_id?: string
-          progress?: string | null
           session_date?: string
-          subject?: string | null
           updated_at?: string
         }
         Relationships: [

@@ -11,9 +11,8 @@ import { fieldClass } from "@/components/ui/form";
 type HistoryLog = {
   id: string;
   session_date: string;
-  subject: string | null;
-  progress: string | null;
-  content: string;
+  subjects: { subject: string; progress: string | null }[];
+  content: string | null;
   menteeId: string;
   menteeName: string;
 };
@@ -157,15 +156,19 @@ export function HistoryCalendar({
               {selectedLogs.map((log) => (
                 <li key={log.id} className="rounded-2xl border border-stone-200 p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                         {log.menteeName}
                       </span>
-                      {log.subject && (
-                        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
-                          {log.subject}
+                      {log.subjects.map((s, index) => (
+                        <span
+                          key={index}
+                          className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600"
+                        >
+                          {s.subject}
+                          {s.progress ? ` · ${s.progress}` : ""}
                         </span>
-                      )}
+                      ))}
                     </div>
                     <Link
                       href={`/mentees/${log.menteeId}`}
@@ -174,10 +177,9 @@ export function HistoryCalendar({
                       자세히 보기 →
                     </Link>
                   </div>
-                  {log.progress && (
-                    <p className="mt-2 text-xs text-stone-500">진도: {log.progress}</p>
+                  {log.content && (
+                    <p className="mt-2 whitespace-pre-wrap text-sm text-stone-700">{log.content}</p>
                   )}
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-stone-700">{log.content}</p>
                 </li>
               ))}
             </ul>

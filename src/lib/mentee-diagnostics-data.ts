@@ -6,7 +6,11 @@
 // the rest reuse that result instead of re-querying and re-building the maps.
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import type { AttendanceInput, SessionLogInput } from "@/lib/learning-diagnostics";
+import {
+  flattenSubjectLogs,
+  type AttendanceInput,
+  type SessionLogInput,
+} from "@/lib/learning-diagnostics";
 
 export type MenteeDiagnosticsData = {
   mentees: { id: string; name: string }[];
@@ -28,7 +32,7 @@ export const getMenteeDiagnosticsData = cache(
       ? await Promise.all([
           supabase
             .from("session_logs")
-            .select("mentee_id, session_date, subject")
+            .select("mentee_id, session_date, session_log_subjects(subject)")
             .in("mentee_id", menteeIds),
           supabase
             .from("attendance")
@@ -40,7 +44,11 @@ export const getMenteeDiagnosticsData = cache(
     const logsByMentee = new Map<string, SessionLogInput[]>();
     for (const log of logRows ?? []) {
       const list = logsByMentee.get(log.mentee_id) ?? [];
-      list.push({ session_date: log.session_date, subject: log.subject });
+      list.push(
+        ...flattenSubjectLogs([
+          { session_date: log.session_date, subjects: log.session_log_subjects },
+        ]),
+      );
       logsByMentee.set(log.mentee_id, list);
     }
 

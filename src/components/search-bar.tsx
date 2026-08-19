@@ -159,11 +159,14 @@ export function SearchBar() {
                             <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
                               {log.menteeName}
                             </span>
-                            {log.subject && (
-                              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] text-stone-600">
-                                {log.subject}
+                            {log.subjects.map((subject) => (
+                              <span
+                                key={subject}
+                                className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] text-stone-600"
+                              >
+                                {subject}
                               </span>
-                            )}
+                            ))}
                           </span>
                           <span className="truncate text-xs text-stone-500">
                             {log.preview}

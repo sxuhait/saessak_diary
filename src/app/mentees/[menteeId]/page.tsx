@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { flattenSubjectLogs } from "@/lib/learning-diagnostics";
 import { PageHeader } from "@/components/ui/page-header";
 import { secondaryPillClass } from "@/components/ui/form";
 import { SessionLogForm } from "./session-log-form";
@@ -39,10 +40,13 @@ export default async function MenteeSessionLogPage({
     supabase.from("mentees").select("id, name").order("name"),
     supabase
       .from("session_logs")
-      .select("id, session_date, subject, progress, content, mentor_id, mentors(name)")
+      .select(
+        "id, session_date, content, mentor_id, mentors(name), session_log_subjects(subject, progress, position)",
+      )
       .eq("mentee_id", menteeId)
       .order("session_date", { ascending: false })
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .order("position", { referencedTable: "session_log_subjects", ascending: true }),
     supabase
       .from("class_enrollments")
       .select("id, class_id, classes(name, teacher_name, class_days(day_of_week))")
@@ -61,12 +65,16 @@ export default async function MenteeSessionLogPage({
   const logs = (logRows ?? []).map((log) => ({
     id: log.id,
     session_date: log.session_date,
-    subject: log.subject,
-    progress: log.progress,
+    subjects: log.session_log_subjects.map((s) => ({
+      subject: s.subject,
+      progress: s.progress,
+    })),
     content: log.content,
     authorName: log.mentors?.name ?? null,
     mentorId: log.mentor_id,
   }));
+
+  const diagnosticsLogs = flattenSubjectLogs(logs);
 
   const enrolled = (enrollmentRows ?? []).flatMap((row) =>
     row.classes
@@ -129,13 +137,13 @@ export default async function MenteeSessionLogPage({
         mentees={allMentees ?? []}
         diagnosticsSlot={
           <>
-            <SubjectSummary logs={logs ?? []} />
-            <LearningDiagnostics logs={logs ?? []} attendance={attendance ?? []} />
+            <SubjectSummary logs={logs} />
+            <LearningDiagnostics logs={diagnosticsLogs} attendance={attendance ?? []} />
           </>
         }
       />
 
-      <LogCalendar logs={logs ?? []} />
+      <LogCalendar logs={logs} />
 
       <div className="flex w-full flex-col gap-3">
         <h2 className="text-lg font-semibold text-stone-900">지난 일지</h2>
@@ -147,7 +155,7 @@ export default async function MenteeSessionLogPage({
         )}
 
         {!logsError && (
-          <SessionLogList logs={logs ?? []} currentMentorId={user?.id} />
+          <SessionLogList logs={logs} currentMentorId={user?.id} />
         )}
       </div>
     </div>

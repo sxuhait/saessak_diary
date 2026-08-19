@@ -8,16 +8,21 @@ export default async function HistoryPage() {
   const [{ data: logRows, error }, { data: mentees }] = await Promise.all([
     supabase
       .from("session_logs")
-      .select("id, session_date, subject, progress, content, mentee_id, mentees(name)")
-      .order("session_date", { ascending: false }),
+      .select(
+        "id, session_date, content, mentee_id, mentees(name), session_log_subjects(subject, progress, position)",
+      )
+      .order("session_date", { ascending: false })
+      .order("position", { referencedTable: "session_log_subjects", ascending: true }),
     supabase.from("mentees").select("id, name").order("name"),
   ]);
 
   const logs = (logRows ?? []).map((log) => ({
     id: log.id,
     session_date: log.session_date,
-    subject: log.subject,
-    progress: log.progress,
+    subjects: log.session_log_subjects.map((s) => ({
+      subject: s.subject,
+      progress: s.progress,
+    })),
     content: log.content,
     menteeId: log.mentee_id,
     menteeName: log.mentees?.name ?? "알 수 없음",

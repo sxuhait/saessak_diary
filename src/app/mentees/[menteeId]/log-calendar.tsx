@@ -9,9 +9,8 @@ import { cardClassName } from "@/components/ui/card";
 type LogSummary = {
   id: string;
   session_date: string;
-  subject: string | null;
-  progress: string | null;
-  content: string;
+  subjects: { subject: string; progress: string | null }[];
+  content: string | null;
 };
 
 function toISODate(date: Date) {
@@ -76,19 +75,24 @@ export function LogCalendar({ logs }: { logs: LogSummary[] }) {
             <ul className="mt-2 flex flex-col gap-2">
               {selectedLogs.map((log) => (
                 <li key={log.id} className="rounded-md bg-stone-50 p-3">
-                  {log.subject && (
-                    <span className="mb-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
-                      {log.subject}
-                    </span>
+                  {log.subjects.length > 0 && (
+                    <div className="mb-1 flex flex-wrap gap-1.5">
+                      {log.subjects.map((s, index) => (
+                        <span
+                          key={index}
+                          className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700"
+                        >
+                          {s.subject}
+                          {s.progress ? ` · ${s.progress}` : ""}
+                        </span>
+                      ))}
+                    </div>
                   )}
-                  {log.progress && (
-                    <p className="mb-1 text-xs text-stone-500">
-                      진도: {log.progress}
+                  {log.content && (
+                    <p className="whitespace-pre-wrap text-sm text-stone-700">
+                      {log.content}
                     </p>
                   )}
-                  <p className="whitespace-pre-wrap text-sm text-stone-700">
-                    {log.content}
-                  </p>
                 </li>
               ))}
             </ul>

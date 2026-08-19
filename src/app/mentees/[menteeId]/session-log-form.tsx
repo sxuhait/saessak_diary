@@ -5,9 +5,9 @@ import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Info, TrendingUp } from "lucide-react";
 import { DatePicker } from "@/components/date-picker";
-import { COMMON_SUBJECTS } from "@/lib/subjects";
 import { cardClassName } from "@/components/ui/card";
 import { labelClass, fieldClass, primaryButtonClass } from "@/components/ui/form";
+import { SubjectRowsEditor } from "./subject-rows-editor";
 import { createSessionLog, type SessionLogState } from "./actions";
 
 const initialState: SessionLogState = {};
@@ -71,12 +71,11 @@ export function SessionLogForm({
 
           <div>
             <label htmlFor="content" className={labelClass}>
-              일지 내용
+              일지 내용 (선택)
             </label>
             <textarea
               id="content"
               name="content"
-              required
               rows={7}
               placeholder="오늘 어떤 활동을 함께 했는지, 멘티의 반응이나 특이사항 등을 자유롭게 적어주세요."
               className={fieldClass}
@@ -86,40 +85,10 @@ export function SessionLogForm({
 
         <div className={`flex flex-col gap-4 ${cardClassName}`}>
           <CardTitle icon={TrendingUp}>학습·진도</CardTitle>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="progress" className={labelClass}>
-                진도 (선택)
-              </label>
-              <input
-                id="progress"
-                name="progress"
-                type="text"
-                placeholder="예: 문제집 45~52p, 3단원"
-                className={fieldClass}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="subject" className={labelClass}>
-                과목 (선택)
-              </label>
-              <input
-                id="subject"
-                name="subject"
-                type="text"
-                list="subject-options"
-                placeholder="예: 수학, 독서"
-                className={fieldClass}
-              />
-              <datalist id="subject-options">
-                {COMMON_SUBJECTS.map((subject) => (
-                  <option key={subject} value={subject} />
-                ))}
-              </datalist>
-            </div>
-          </div>
+          <p className="text-sm text-stone-500">
+            오늘 다룬 과목과 학습량을 과목별로 나눠 기록하세요. (선택)
+          </p>
+          <SubjectRowsEditor datalistId="subject-options-new" />
         </div>
       </div>
 

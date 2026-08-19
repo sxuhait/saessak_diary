@@ -5,12 +5,13 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { cardClassName } from "@/components/ui/card";
 import { fieldClass, labelClass } from "@/components/ui/form";
+import { DatePicker } from "@/components/date-picker";
 
 type MyLog = {
   id: string;
   session_date: string;
-  subject: string | null;
-  content: string;
+  subjects: string[];
+  content: string | null;
   menteeId: string;
   menteeName: string;
 };
@@ -34,7 +35,7 @@ export function MyLogsList({ logs }: { logs: MyLog[] }) {
   const subjects = useMemo(() => {
     const set = new Set<string>();
     for (const log of logs) {
-      if (log.subject) set.add(log.subject);
+      for (const subject of log.subjects) set.add(subject);
     }
     return [...set].sort();
   }, [logs]);
@@ -45,7 +46,7 @@ export function MyLogsList({ logs }: { logs: MyLog[] }) {
       if (trimmedMentee && !log.menteeName.toLowerCase().includes(trimmedMentee)) {
         return false;
       }
-      if (subjectFilter && log.subject !== subjectFilter) {
+      if (subjectFilter && !log.subjects.includes(subjectFilter)) {
         return false;
       }
       if (dateFilter && log.session_date !== dateFilter) {
@@ -101,15 +102,11 @@ export function MyLogsList({ logs }: { logs: MyLog[] }) {
           </div>
 
           <div>
-            <label htmlFor="log-date-filter" className={labelClass}>
-              날짜
-            </label>
-            <input
-              id="log-date-filter"
-              type="date"
+            <label className={labelClass}>날짜</label>
+            <DatePicker
               value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className={fieldClass}
+              onChange={setDateFilter}
+              placeholder="전체 날짜"
             />
           </div>
         </div>
@@ -156,14 +153,19 @@ export function MyLogsList({ logs }: { logs: MyLog[] }) {
                     <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
                       {log.menteeName}
                     </span>
-                    {log.subject && (
-                      <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
-                        {log.subject}
+                    {log.subjects.map((subject) => (
+                      <span
+                        key={subject}
+                        className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600"
+                      >
+                        {subject}
                       </span>
-                    )}
+                    ))}
                   </div>
                 </div>
-                <p className="mt-2 line-clamp-2 text-sm text-stone-700">{log.content}</p>
+                {log.content && (
+                  <p className="mt-2 line-clamp-2 text-sm text-stone-700">{log.content}</p>
+                )}
               </Link>
             </li>
           ))}
