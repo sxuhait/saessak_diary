@@ -22,7 +22,7 @@ export function ScheduleItemFields({
   return (
     <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <div>
+        <div className="min-w-0">
           <label htmlFor={`${idPrefix}-day`} className={labelClass}>
             요일
           </label>
@@ -40,7 +40,7 @@ export function ScheduleItemFields({
           </select>
         </div>
 
-        <div>
+        <div className="min-w-0">
           <label htmlFor={`${idPrefix}-start`} className={labelClass}>
             시작 시간
           </label>
@@ -54,7 +54,7 @@ export function ScheduleItemFields({
           />
         </div>
 
-        <div>
+        <div className="min-w-0">
           <label htmlFor={`${idPrefix}-end`} className={labelClass}>
             종료 시간
           </label>
@@ -68,7 +68,7 @@ export function ScheduleItemFields({
           />
         </div>
 
-        <div>
+        <div className="min-w-0">
           <label className={labelClass}>색</label>
           <ColorPicker name="color" defaultValue={defaultValues?.color ?? "sky"} />
         </div>

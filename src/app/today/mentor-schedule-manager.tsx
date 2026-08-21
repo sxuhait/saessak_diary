@@ -112,7 +112,7 @@ export function MentorScheduleManager({
         className="flex flex-col gap-3 border-t border-stone-100 pt-4"
       >
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <div>
+          <div className="min-w-0">
             <label htmlFor="day_of_week" className={labelClass}>
               요일
             </label>
@@ -129,7 +129,7 @@ export function MentorScheduleManager({
               ))}
             </select>
           </div>
-          <div>
+          <div className="min-w-0">
             <label htmlFor="start_time" className={labelClass}>
               시작
             </label>
@@ -142,7 +142,7 @@ export function MentorScheduleManager({
               ariaLabel="시작 시간"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label htmlFor="end_time" className={labelClass}>
               종료
             </label>

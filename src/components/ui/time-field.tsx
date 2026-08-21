@@ -26,7 +26,11 @@ export function TimeField({
   const invalid = value !== "" && !isValidTimeValue(value);
 
   return (
-    <div className="flex min-w-0 gap-2">
+    // Stacked below sm: (each control gets its own full-width row) so the
+    // fixed-width text input and the dropdown never have to compete for
+    // horizontal space on a narrow phone -- side by side only from sm: up,
+    // where there's reliably enough width for both.
+    <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
       <input
         id={id}
         name={name}
@@ -40,7 +44,7 @@ export function TimeField({
         aria-label={ariaLabel}
         pattern="([01]\d|2[0-3]):[0-5]\d"
         title="24시간 형식으로 입력해주세요 (예: 14:00)"
-        className={`${fieldClass} w-24 shrink-0 bg-white ${
+        className={`${fieldClass} min-w-0 bg-white sm:w-24 sm:shrink-0 ${
           invalid ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""
         }`}
       />
@@ -48,7 +52,7 @@ export function TimeField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-label={`${ariaLabel} 목록에서 선택`}
-        className={`${fieldClass} min-w-0 flex-1 bg-white`}
+        className={`${fieldClass} min-w-0 bg-white sm:flex-1`}
       >
         <option value="">직접 입력</option>
         {TIME_OPTIONS.map((time) => (
