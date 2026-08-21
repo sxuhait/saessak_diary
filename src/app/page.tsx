@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarDays, CheckCircle2, Clock, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
+import { LandingPage } from "@/components/landing-page";
 import { getMenteeDiagnosticsData } from "@/lib/mentee-diagnostics-data";
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -63,6 +64,10 @@ export default async function HomePage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) {
+    return <LandingPage />;
+  }
 
   const today = new Date();
   const todayIso = toISODate(today);

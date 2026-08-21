@@ -12,6 +12,37 @@
   --font-heading: var(--font-heading);
   --shadow-soft: 0 4px 20px rgba(38, 50, 56, 0.05);
   --shadow-soft-lg: 0 8px 30px rgba(38, 50, 56, 0.08);
+
+  /* Landing page only (src/components/landing-page.tsx) -- palette from a
+     Stitch design mock, kept separate from the emerald/stone tokens the
+     rest of the app uses. Defined here (rather than as Tailwind arbitrary
+     `bg-[#...]` values) because arbitrary bracket values aren't being
+     picked up by this project's Tailwind build -- confirmed via a real
+     browser render where every `bg-[#hex]`/`shadow-[...]` utility resolved
+     to nothing while these `@theme` tokens compiled fine, matching how
+     --shadow-soft above already works. */
+  --color-sprout-deep: #356a26;
+  --color-sprout-deep-hover: #2c581f;
+  --color-sprout: #88c273;
+  --color-sprout-hover: #79b562;
+  --color-sprout-tint: #e3f2da;
+  --color-sun-tint: #faf1cf;
+  --color-sun-ink: #70621e;
+  --color-sky-tint: #dcedf5;
+  --color-sky-ink: #174b5d;
+  --color-canvas: #f9fbfa;
+  --color-mist: #f2f4f3;
+  --color-ink: #191c1c;
+  --color-outline-soft: #e1e3e2;
+  --shadow-sprout-sm: 0 4px 20px 0 rgba(136, 194, 115, 0.08);
+  --shadow-sprout-md: 0 4px 20px 0 rgba(136, 194, 115, 0.15);
+  --shadow-sprout-lg: 0 4px 20px 0 rgba(136, 194, 115, 0.18);
+  --shadow-sprout-cta: 0 4px 20px 0 rgba(136, 194, 115, 0.25);
+  --shadow-sprout-cta-deep: 0 4px 20px 0 rgba(53, 106, 38, 0.25);
+  --text-display: 2.5rem;
+  --text-display--line-height: 3.25rem;
+  --text-headline: 2rem;
+  --text-headline--line-height: 2.625rem;
 }
 
 body {
