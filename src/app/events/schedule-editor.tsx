@@ -64,7 +64,7 @@ export function ScheduleEditor({
             key={row.id}
             className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center"
           >
-            <div className="min-w-0 shrink-0">
+            <div className="min-w-0 sm:w-40 sm:shrink-0">
               <TimeField
                 value={row.time}
                 onChange={(time) => updateRow(row.id, { time })}
