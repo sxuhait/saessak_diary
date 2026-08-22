@@ -35,14 +35,8 @@ export async function updateSession(request: NextRequest) {
   const isPublicPath = PUBLIC_PATHS.some((path) =>
     request.nextUrl.pathname.startsWith(path),
   );
-  // "/" renders a public landing page for logged-out visitors and the
-  // dashboard for logged-in ones (src/app/page.tsx branches on auth itself),
-  // so it's exempt from the redirect-to-login below without being a
-  // startsWith prefix in PUBLIC_PATHS (which would match every path).
-  // Logged-in users hitting "/" still go through the expiry check below.
-  const isRoot = request.nextUrl.pathname === "/";
 
-  if (!user && !isPublicPath && !isRoot) {
+  if (!user && !isPublicPath) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
